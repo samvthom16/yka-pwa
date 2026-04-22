@@ -36,7 +36,7 @@ app/
   globals.css           TipTap prose styles, heading margins, figure/figcaption, animations
 
 components/editor/
-  WritingApp.tsx        Full-screen shell: auto-resize title textarea, save state, focus mode toggle
+  WritingApp.tsx        Full-screen shell: title textarea, thumbnail picker, save state, focus mode toggle
   TipTapEditor.tsx      Core editor (forwardRef exposes getHTML / getJSON / focus)
   BubbleMenuBar.tsx     Dark pill formatting toolbar — appears on text selection
   SlashCommandMenu.tsx  "/" command palette with arrow-key + Enter navigation
@@ -47,7 +47,7 @@ components/editor/
     FigureImage.ts      Custom TipTap Node (content: "inline*") + setFigureImage command
 
 hooks/
-  useDraft.ts           IndexedDB draft persistence (save / load / clear)
+  useDraft.ts           IndexedDB draft persistence (save / load / clear) — stores title, content JSON, thumbnailDataUrl
 
 lib/api/
   wordpress.ts          createPost / updatePost / uploadMedia — WP REST API with App Password auth
@@ -63,11 +63,8 @@ public/
 
 ## TipTap v3 — Key API Differences from v2
 
-These caught us during the build and are non-obvious:
-
 1. **`BubbleMenu` is NOT in `@tiptap/react`.**
-   It moved to `@tiptap/extension-bubble-menu` and is a TipTap *Extension*, not a React component.
-   → We implemented it manually: `onSelectionUpdate` → `requestAnimationFrame` → `window.getSelection().getRangeAt(0).getBoundingClientRect()` → `position: fixed` React element.
+   Implemented manually: `onSelectionUpdate` → `requestAnimationFrame` → `window.getSelection().getRangeAt(0).getBoundingClientRect()` → `position: fixed` React element.
 
 2. **`immediatelyRender: false` is required.**
    Pass it to `useEditor(...)` or TipTap throws a hydration mismatch error on SSR.
@@ -94,8 +91,19 @@ These caught us during the build and are non-obvious:
 | **Title wrapping** | `<textarea rows={1} resize-none overflow-hidden>` + `el.style.height = el.scrollHeight + "px"` |
 | **Focus mode** | `.editor-focus-mode` CSS class dims non-focused blocks; header/footer fade via opacity |
 | **HTML export** | `editor.getHTML()` → DOMPurify → standalone `.html` blob download |
-| **Preview modal** | Full-screen overlay renders title + `dangerouslySetInnerHTML` with same prose CSS |
-| **Autosave indicator** | Debounced 1500 ms timer: `"saving"` → `"saved"` |
+| **Preview modal** | Full-screen overlay renders title → cover photo → body with same prose CSS |
+| **Autosave indicator** | `triggerSave()` sets "saving" → writes to IndexedDB → sets "saved" |
+| **Cover photo** | Optional field between title and editor; `FileReader.readAsDataURL` (not `createObjectURL`) so it persists across reloads; shown in preview between title and body |
+| **Offline draft persistence** | `useDraft("default")` wired into `WritingApp`; saves title + TipTap JSON + thumbnailDataUrl to IndexedDB; editor deferred until draft loads so `initialContent` is correct |
+
+---
+
+## Offline Draft Persistence — Key Decisions
+
+- **`blob:` URLs vs data URLs:** `createObjectURL` produces session-only blob URLs that break on reload. `FileReader.readAsDataURL` produces self-contained strings safe to store in IndexedDB.
+- **Stale closure prevention:** `latestTitle` and `latestThumbnail` refs hold the latest values; the debounced `triggerSave` reads from refs, not state, so it never captures old values.
+- **Editor deferred render:** `TipTapEditor` is not mounted until `draftLoaded === true` (IndexedDB read resolves). `useEditor` only reads `initialContent` on first render — mounting early would mean starting with empty content.
+- **Restoration effect deps:** `useEffect` depends only on `isLoading`, not `draft`, to fire exactly once on mount rather than on every `saveDraft` call.
 
 ---
 
@@ -112,6 +120,18 @@ These caught us during the build and are non-obvious:
 
 ---
 
+## AI Review Feature — Planned (not yet built)
+
+Agreed approach: **on-demand Review panel** (Option 1).
+
+- "Review" button in `EditorHeader` opens a slide-in side panel
+- Streams feedback from Claude API via a Next.js API route (`/api/review`)
+- Structured output: overall impression, structure & flow, clarity, tone, top 3–5 actionable suggestions
+- Tech: `@anthropic-ai/sdk` streaming → SSE → `ReviewPanel.tsx`
+- Optional later: pre-publish review gate when Publish is clicked
+
+---
+
 ## Bugs Fixed This Session
 
 | Bug | Fix |
@@ -123,3 +143,5 @@ These caught us during the build and are non-obvious:
 | Title doesn't wrap to next line | Replaced `<input>` with auto-resizing `<textarea>` |
 | Heading margin-bottom too tight | Changed from `-0.25rem` to `0.5 × line-height` in `em` units |
 | `NodeViewContent as="figcaption"` type error | Wrapped NodeViewContent in native `<figcaption>` element |
+| Cover photo missing from preview | Passed `thumbnail` prop through `WritingApp` → `EditorHeader` → `PreviewModal` |
+| Cover photo in wrong position in preview | Moved thumbnail render to between title and body in `PreviewModal` |
