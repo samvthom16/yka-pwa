@@ -11,6 +11,7 @@ export interface Draft {
   id: string;
   title: string;
   content: string; // TipTap JSON serialised as string
+  thumbnailDataUrl?: string;
   updatedAt: number;
 }
 
@@ -45,12 +46,13 @@ export function useDraft(draftId = "default") {
   }, [draftId]);
 
   const saveDraft = useCallback(
-    async (data: { title: string; content: string }) => {
+    async (data: { title: string; content: string; thumbnailDataUrl?: string }) => {
       const db = await getDB();
       const record: Draft = {
         id: draftId,
         title: data.title,
         content: data.content,
+        thumbnailDataUrl: data.thumbnailDataUrl,
         updatedAt: Date.now(),
       };
       await db.put(STORE, record);
