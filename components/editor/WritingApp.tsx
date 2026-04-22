@@ -150,6 +150,7 @@ export default function WritingApp() {
     >
       <EditorHeader
         title={title}
+        thumbnail={thumbnail}
         focusMode={focusMode}
         saveStatus={saveStatus}
         editorRef={editorRef}

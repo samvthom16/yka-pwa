@@ -14,6 +14,7 @@ import type { TipTapEditorHandle } from "./TipTapEditor";
 
 interface EditorHeaderProps {
   title: string;
+  thumbnail: string | null;
   focusMode: boolean;
   saveStatus: "saved" | "saving" | "unsaved";
   editorRef: RefObject<TipTapEditorHandle | null>;
@@ -53,10 +54,12 @@ function IconBtn({
 /* ── Preview modal ────────────────────────────────────────────── */
 function PreviewModal({
   title,
+  thumbnail,
   html,
   onClose,
 }: {
   title: string;
+  thumbnail: string | null;
   html: string;
   onClose: () => void;
 }) {
@@ -77,6 +80,14 @@ function PreviewModal({
         </div>
         {/* Preview content */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-8">
+          {thumbnail && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={thumbnail}
+              alt="Cover"
+              className="w-full object-cover max-h-[300px] rounded-lg mb-8"
+            />
+          )}
           {title && (
             <h1
               className="text-4xl font-bold tracking-tight text-gray-900 mb-8 break-words"
@@ -103,6 +114,7 @@ function PreviewModal({
 /* ── Main header ─────────────────────────────────────────────── */
 export default function EditorHeader({
   title,
+  thumbnail,
   focusMode,
   saveStatus,
   editorRef,
@@ -225,6 +237,7 @@ export default function EditorHeader({
       {showPreview && (
         <PreviewModal
           title={title}
+          thumbnail={thumbnail}
           html={previewHtml}
           onClose={() => setShowPreview(false)}
         />
