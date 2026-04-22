@@ -80,14 +80,6 @@ function PreviewModal({
         </div>
         {/* Preview content */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-8">
-          {thumbnail && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={thumbnail}
-              alt="Cover"
-              className="w-full object-cover max-h-[300px] rounded-lg mb-8"
-            />
-          )}
           {title && (
             <h1
               className="text-4xl font-bold tracking-tight text-gray-900 mb-8 break-words"
@@ -100,6 +92,14 @@ function PreviewModal({
             >
               {title}
             </h1>
+          )}
+          {thumbnail && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={thumbnail}
+              alt="Cover"
+              className="w-full object-cover max-h-[300px] rounded-lg mb-8"
+            />
           )}
           <div
             className="ProseMirror"
