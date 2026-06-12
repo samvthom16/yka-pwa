@@ -240,14 +240,13 @@ export default function Dashboard() {
               const isEditable =
                 post.status === "draft" ||
                 categoryNames.some((n) => ["Unlisted", "Unreviewed"].includes(n));
-              const destination = isEditable ? `/write?id=${post.id}` : `/posts/${post.id}`;
               return (
                 <li key={post.id}>
-                  <button
-                    onClick={() => router.push(destination)}
-                    className="group w-full text-left flex items-start gap-4 py-5"
-                  >
-                    <div className="flex-1 min-w-0">
+                  <div className="group flex items-start gap-4 py-5">
+                    <button
+                      onClick={() => router.push(`/posts/${post.id}`)}
+                      className="flex-1 min-w-0 text-left"
+                    >
                       <p className="text-sm font-semibold text-gray-900 group-hover:text-gray-500 transition-colors line-clamp-2">
                         {title}
                       </p>
@@ -266,15 +265,26 @@ export default function Dashboard() {
                         ))}
                         <span className="text-xs text-gray-300">{formatDate(post.modified)}</span>
                       </div>
+                    </button>
+                    <div className="flex-shrink-0 flex flex-col items-end gap-2">
+                      {thumbnail && (
+                        <img
+                          src={thumbnail}
+                          alt=""
+                          className="w-16 h-16 rounded-lg object-cover bg-gray-100"
+                        />
+                      )}
+                      {isEditable && (
+                        <button
+                          onClick={() => router.push(`/write?id=${post.id}`)}
+                          className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-gray-700 transition-colors"
+                        >
+                          <PenLine size={11} />
+                          Edit
+                        </button>
+                      )}
                     </div>
-                    {thumbnail && (
-                      <img
-                        src={thumbnail}
-                        alt=""
-                        className="flex-shrink-0 w-16 h-16 rounded-lg object-cover bg-gray-100"
-                      />
-                    )}
-                  </button>
+                  </div>
                 </li>
               );
             })}
