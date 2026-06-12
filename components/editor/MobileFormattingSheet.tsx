@@ -7,7 +7,7 @@ import { useLinkEditor } from "./useLinkEditor";
 
 interface Props {
   editor: Editor;
-  visible: boolean;
+  isFocused: boolean;
 }
 
 /* ── Button ─────────────────────────────────────────────────── */
@@ -27,9 +27,7 @@ function Btn({
       title={title}
       onPointerDown={onPointerDown}
       className={`flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0 transition-colors ${
-        active
-          ? "bg-gray-900 text-white"
-          : "text-gray-600 active:bg-gray-100"
+        active ? "bg-gray-900 text-white" : "text-gray-600 active:bg-gray-100"
       }`}
     >
       {children}
@@ -49,52 +47,50 @@ const pd =
     fn();
   };
 
-/* ── Sheet ──────────────────────────────────────────────────── */
-export default function MobileFormattingSheet({ editor, visible }: Props) {
+/* ── Toolbar ─────────────────────────────────────────────────── */
+export default function MobileFormattingSheet({ editor, isFocused }: Props) {
   const { linkMode, linkInput, setLinkInput, openLink, applyLink, cancelLink } =
     useLinkEditor(editor, { focus: false });
 
-  /* Lift sheet above the iOS software keyboard when it appears */
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  /* Track keyboard height via visualViewport so we sit exactly above the keyboard */
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
-    const onResize = () => {
-      const offset = window.innerHeight - vv.height - vv.offsetTop;
-      setKeyboardOffset(Math.max(0, offset));
+    const update = () => {
+      setKeyboardHeight(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
     };
-    vv.addEventListener("resize", onResize);
-    return () => vv.removeEventListener("resize", onResize);
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
   }, []);
 
-  /* Reset link state when sheet hides */
+  /* Reset link state when toolbar hides */
+  const visible = isFocused || linkMode;
   useEffect(() => {
     if (!visible) cancelLink();
   }, [visible, cancelLink]);
 
-  const sheetStyle: React.CSSProperties = {
-    paddingBottom: "env(safe-area-inset-bottom, 0px)",
-    transform: visible
-      ? keyboardOffset > 0
-        ? `translateY(-${keyboardOffset}px)`
-        : "translateY(0)"
-      : "translateY(100%)",
-  };
-
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[150] bg-white border-t border-gray-100
-        shadow-[0_-4px_24px_rgba(0,0,0,0.07)] transition-transform duration-200 ease-out"
-      style={sheetStyle}
+      className="fixed left-0 right-0 z-[150] bg-white border-t border-gray-100 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
+      style={{
+        /* Position flush with the top of the keyboard; instant update — no CSS transition
+           on bottom so the bar tracks the keyboard without lag or scroll jitter */
+        bottom: keyboardHeight,
+        paddingBottom: keyboardHeight > 0 ? 0 : "env(safe-area-inset-bottom, 0px)",
+        /* Fade in/out only — no slide, which would fight the keyboard animation */
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? "auto" : "none",
+        transition: "opacity 0.12s ease",
+      }}
     >
-      {/* Drag handle */}
-      <div className="flex justify-center pt-2 pb-0.5">
-        <div className="w-8 h-1 bg-gray-200 rounded-full" />
-      </div>
-
       {linkMode ? (
         /* ── Link URL input ──────────────────────────────────── */
-        <div className="flex items-center gap-2 px-4 pb-3">
+        <div className="flex items-center gap-2 px-4 py-2">
           <input
             autoFocus
             type="url"
@@ -106,30 +102,24 @@ export default function MobileFormattingSheet({ editor, visible }: Props) {
               if (e.key === "Escape") cancelLink();
             }}
             placeholder="Paste or type URL…"
-            className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors"
+            className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-base text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors"
           />
           <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              applyLink();
-            }}
-            className="h-12 px-4 text-sm font-medium bg-gray-900 text-white rounded-xl active:bg-gray-700 flex-shrink-0"
+            onPointerDown={(e) => { e.preventDefault(); applyLink(); }}
+            className="h-11 px-4 text-sm font-medium bg-gray-900 text-white rounded-xl active:bg-gray-700 flex-shrink-0"
           >
             Apply
           </button>
           <button
-            onPointerDown={(e) => {
-              e.preventDefault();
-              cancelLink();
-            }}
-            className="h-12 px-3 text-sm text-gray-400 active:text-gray-700 flex-shrink-0"
+            onPointerDown={(e) => { e.preventDefault(); cancelLink(); }}
+            className="h-11 px-3 text-sm text-gray-400 active:text-gray-700 flex-shrink-0"
           >
             Cancel
           </button>
         </div>
       ) : (
         /* ── Formatting toolbar ──────────────────────────────── */
-        <div className="flex items-center gap-0.5 px-2 pb-2 overflow-x-auto">
+        <div className="flex items-center gap-0.5 px-2 py-1 overflow-x-auto">
           <Btn
             active={editor.isActive("heading", { level: 1 })}
             title="Heading 1"
@@ -197,10 +187,7 @@ export default function MobileFormattingSheet({ editor, visible }: Props) {
           ) : (
             <Btn
               title="Add link"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                openLink();
-              }}
+              onPointerDown={(e) => { e.preventDefault(); openLink(); }}
             >
               <Link2 size={17} />
             </Btn>
