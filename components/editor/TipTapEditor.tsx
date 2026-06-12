@@ -18,6 +18,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import CharacterCount from "@tiptap/extension-character-count";
 import Typography from "@tiptap/extension-typography";
 import BubbleMenuBar from "./BubbleMenuBar";
+import MobileFormattingSheet from "./MobileFormattingSheet";
 import SlashCommandMenu from "./SlashCommandMenu";
 
 export interface TipTapEditorHandle {
@@ -57,7 +58,16 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
   function TipTapEditor({ onUpdate, initialContent }, ref) {
     const [slashMenu, setSlashMenu] = useState<SlashMenuState>(INITIAL_SLASH);
     const [bubbleMenu, setBubbleMenu] = useState<BubbleMenuState>(HIDDEN_BUBBLE);
+    const [isMobile, setIsMobile] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      const mq = window.matchMedia("(max-width: 639px)");
+      setIsMobile(mq.matches);
+      const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+      mq.addEventListener("change", handler);
+      return () => mq.removeEventListener("change", handler);
+    }, []);
 
     const closeSlashMenu = useCallback(() => setSlashMenu(INITIAL_SLASH), []);
     const hideBubble = useCallback(() => setBubbleMenu(HIDDEN_BUBBLE), []);
@@ -285,8 +295,16 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         {/* ── Editor ─────────────────────────────────────────── */}
         <EditorContent editor={editor} />
 
-        {/* ── Bubble menu (fixed to viewport) ────────────────── */}
-        {editor && bubbleMenu.visible && (
+        {/* ── Mobile: bottom-sheet formatting toolbar ─────────── */}
+        {isMobile && editor && (
+          <MobileFormattingSheet
+            editor={editor}
+            visible={!editor.state.selection.empty}
+          />
+        )}
+
+        {/* ── Desktop: floating bubble menu ───────────────────── */}
+        {!isMobile && editor && bubbleMenu.visible && (
           <div
             className="fixed z-[150] -translate-x-1/2 pointer-events-auto"
             style={{ top: bubbleMenu.top, left: bubbleMenu.left }}
