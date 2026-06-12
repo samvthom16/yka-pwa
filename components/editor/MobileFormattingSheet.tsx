@@ -74,13 +74,13 @@ export default function MobileFormattingSheet({ editor, isFocused }: Props) {
 
   return (
     <div
-      className="fixed left-0 right-0 z-[150] bg-white border-b border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+      className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100"
       style={{
-        /* Sit flush below the sticky header (safe-area-inset-top + h-14 = 3.5rem) */
-        top: "calc(env(safe-area-inset-top, 0px) + 3.5rem)",
+        /* Safe area accounts for notch / Dynamic Island */
+        paddingTop: "env(safe-area-inset-top, 0px)",
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? "auto" : "none",
-        transition: "opacity 0.12s ease",
+        transition: "opacity 0.15s ease",
       }}
     >
       {linkMode ? (
