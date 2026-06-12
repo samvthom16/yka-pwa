@@ -41,9 +41,12 @@ export interface WPMediaResponse {
 }
 
 /* ─── Auth ───────────────────────────────────────────────────── */
+export function buildAuthHeader(username: string, appPassword: string): string {
+  return `Basic ${btoa(`${username}:${appPassword.replace(/\s/g, "")}`)}`;
+}
+
 function authHeader(cfg: WPConfig): string {
-  const cleaned = cfg.appPassword.replace(/\s/g, "");
-  return `Basic ${btoa(`${cfg.username}:${cleaned}`)}`;
+  return buildAuthHeader(cfg.username, cfg.appPassword);
 }
 
 function apiUrl(cfg: WPConfig, path: string): string {

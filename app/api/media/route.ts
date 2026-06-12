@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { WP_SITE_URL } from "@/lib/wp-config";
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl.searchParams.get("url");
   if (!url) return new NextResponse("Missing url", { status: 400 });
 
-  // Only proxy requests to the known WP site
-  if (!url.startsWith("https://ykasandbox.com/")) {
+  if (!url.startsWith(`${WP_SITE_URL}/`)) {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   return new NextResponse(res.body, {
     headers: {
       "Content-Type": contentType,
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "private, max-age=3600",
     },
   });
 }

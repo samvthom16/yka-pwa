@@ -1,60 +1,23 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import LoginScreen from "@/components/auth/LoginScreen";
-import { getPosts, getPostCounts, getMe } from "@/lib/api/wordpress";
+import { getPosts, getPostCounts, getMe, buildAuthHeader } from "@/lib/api/wordpress";
 import type { WPPostListItem } from "@/lib/api/wordpress";
-import { useState } from "react";
+import { WP_SITE_URL } from "@/lib/wp-config";
+import { formatDate, stripHtml } from "@/lib/utils";
+import WpImage from "@/components/ui/WpImage";
 import { Loader2, PenLine, RefreshCw, LogOut } from "lucide-react";
 
-const SITE_URL = "https://ykasandbox.com";
 const PER_PAGE = 20;
 
 type Filter = "all" | "publish" | "draft";
 
 function wpConfig(user: { username: string; password: string }) {
-  return { siteUrl: SITE_URL, username: user.username, appPassword: user.password };
-}
-
-function wpAuthHeader(user: { username: string; password: string }): string {
-  return `Basic ${btoa(`${user.username}:${user.password.replace(/\s/g, "")}`)}`;
-}
-
-function WpImage({ src, auth, className }: { src: string; auth: string; className?: string }) {
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    let revoked = false;
-    fetch(`/api/media?url=${encodeURIComponent(src)}`, {
-      headers: { "x-wp-auth": auth },
-    })
-      .then((r) => r.blob())
-      .then((blob) => {
-        if (!revoked) setObjectUrl(URL.createObjectURL(blob));
-      })
-      .catch(() => {});
-    return () => {
-      revoked = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, auth]);
-
-  if (!objectUrl) return <div className={className + " bg-gray-100"} />;
-  return <img src={objectUrl} alt="" className={className} />;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric", month: "short", day: "numeric",
-  });
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").trim();
+  return { siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password };
 }
 
 export default function Dashboard() {
@@ -64,7 +27,7 @@ export default function Dashboard() {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const cfg = user ? wpConfig(user) : null;
-  const auth = user ? wpAuthHeader(user) : "";
+  const auth = user ? buildAuthHeader(user.username, user.password) : "";
 
   /* ── Resolve WP author ID ────────────────────────────────────── */
   const { data: me } = useQuery({

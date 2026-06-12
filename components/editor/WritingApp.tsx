@@ -9,7 +9,9 @@ import type { TipTapEditorHandle } from "./TipTapEditor";
 import { useDraft } from "@/hooks/useDraft";
 import { useAuth } from "@/hooks/useAuth";
 import LoginScreen from "@/components/auth/LoginScreen";
-import { createPost, updatePost, getPost, uploadMedia } from "@/lib/api/wordpress";
+import { createPost, updatePost, getPost, uploadMedia, buildAuthHeader } from "@/lib/api/wordpress";
+import { WP_SITE_URL } from "@/lib/wp-config";
+import WpImage from "@/components/ui/WpImage";
 import type { PublishStatus } from "./EditorHeader";
 
 const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
@@ -74,6 +76,11 @@ export default function WritingApp({ postId }: { postId?: number }) {
 
   const { draft, saveDraft, clearDraft, isLoading } = useDraft("default");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+  }, []);
 
   /* Refs hold latest values so the debounced callback never captures stale state */
   const latestTitle = useRef("");
@@ -82,7 +89,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
   /* ── Edit mode: load existing post from WordPress ─────────── */
   useEffect(() => {
     if (!isEditMode || !user) return;
-    const cfg = { siteUrl: "https://ykasandbox.com", username: user.username, appPassword: user.password };
+    const cfg = { siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password };
     getPost(cfg, postId!).then((post) => {
       const t = post.title.rendered.replace(/<[^>]*>/g, "");
       setTitle(t);
@@ -227,7 +234,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
     setPublishStatus("publishing");
     setPublishError("");
 
-    const cfg = { siteUrl: "https://ykasandbox.com", username: user.username, appPassword: user.password };
+    const cfg = { siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password };
 
     try {
       /* Upload cover photo if a new file was selected */
@@ -257,7 +264,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
         await clearDraft();
       }
       setPublishStatus("success");
-      setTimeout(() => router.push("/"), 1800);
+      redirectTimerRef.current = setTimeout(() => router.push("/"), 1800);
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Publish failed. Try again.");
       setPublishStatus("error");
@@ -323,12 +330,17 @@ export default function WritingApp({ postId }: { postId?: number }) {
         <div className={`mb-10 transition-opacity duration-300 ${focusMode ? "opacity-40 hover:opacity-100" : ""}`}>
           {thumbnail ? (
             <div className="relative group rounded-lg overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={thumbnail}
-                alt="Post thumbnail"
-                className="w-full object-cover max-h-[360px]"
-              />
+              {thumbnail.startsWith("data:") ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={thumbnail} alt="Post thumbnail" className="w-full object-cover max-h-[360px]" />
+              ) : (
+                <WpImage
+                  src={thumbnail}
+                  auth={buildAuthHeader(user.username, user.password)}
+                  alt="Post thumbnail"
+                  className="w-full object-cover max-h-[360px]"
+                />
+              )}
               <button
                 onClick={removeThumbnail}
                 className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 text-white text-xs px-3 py-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-150"

@@ -1,4 +1,6 @@
-const BASE = "https://ykasandbox.com/wp-json/yka/v2";
+import { WP_SITE_URL } from "@/lib/wp-config";
+
+const BASE = `${WP_SITE_URL}/wp-json/yka/v2`;
 
 function b64(value: string): string {
   return btoa(value);
@@ -36,6 +38,13 @@ export async function verifyOtp(email: string, otp: string): Promise<WPUser> {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     throw new Error(data?.message || `Server error ${res.status}`);
+  }
+  if (
+    !data ||
+    typeof data.username !== "string" ||
+    typeof data.password !== "string"
+  ) {
+    throw new Error("Unexpected response from server. Please try again.");
   }
   return data as WPUser;
 }

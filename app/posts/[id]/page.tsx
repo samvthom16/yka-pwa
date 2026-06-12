@@ -2,22 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import DOMPurify from "dompurify";
 import { useAuth } from "@/hooks/useAuth";
 import { getPost } from "@/lib/api/wordpress";
 import type { WPPostListItem } from "@/lib/api/wordpress";
+import { WP_SITE_URL } from "@/lib/wp-config";
+import { formatDate, stripHtml } from "@/lib/utils";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-
-const SITE_URL = "https://ykasandbox.com";
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric", month: "short", day: "numeric",
-  });
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").trim();
-}
 
 export default function PostPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +24,7 @@ export default function PostPage() {
     if (!user) { router.replace("/"); return; }
 
     getPost(
-      { siteUrl: SITE_URL, username: user.username, appPassword: user.password },
+      { siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password },
       Number(id)
     )
       .then(setPost)
@@ -64,6 +55,7 @@ export default function PostPage() {
 
   const title = stripHtml(post.title.rendered) || "Untitled";
   const isPublished = post.status === "publish";
+  const safeContent = DOMPurify.sanitize(post.content.rendered);
 
   /* ── Reader ──────────────────────────────────────────────────── */
   return (
@@ -104,7 +96,7 @@ export default function PostPage() {
           {title}
         </h1>
         <p className="text-sm text-gray-400 mb-10">{formatDate(post.modified)}</p>
-        <div className="ProseMirror" dangerouslySetInnerHTML={{ __html: post.content.rendered }} />
+        <div className="ProseMirror" dangerouslySetInnerHTML={{ __html: safeContent }} />
       </article>
     </div>
   );
