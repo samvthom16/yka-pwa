@@ -230,11 +230,11 @@ export default function Dashboard() {
                       onClick={() => router.push(`/posts/${post.id}`)}
                       className="flex-1 min-w-0 text-left"
                     >
-                      <p className="text-sm font-semibold text-gray-900 group-hover:text-gray-500 transition-colors line-clamp-2">
+                      <p className="text-base font-semibold text-gray-900 group-hover:text-gray-500 transition-colors line-clamp-2">
                         {title}
                       </p>
                       {excerpt && (
-                        <p className="mt-0.5 text-xs text-gray-400 line-clamp-2">{excerpt}</p>
+                        <p className="mt-0.5 text-sm text-gray-400 line-clamp-2">{excerpt}</p>
                       )}
                       <div className="mt-1.5 flex items-center gap-2 flex-wrap">
                         <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
