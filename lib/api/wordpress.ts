@@ -166,6 +166,53 @@ export async function getPosts(
 }
 
 
+/* ─── Comments ───────────────────────────────────────────────── */
+export interface WPComment {
+  id: number;
+  parent: number;
+  author: number;
+  author_name: string;
+  author_avatar_urls: Record<string, string>;
+  date: string;
+  content: { rendered: string };
+  status: string;
+}
+
+export async function getComments(cfg: WPConfig, postId: number): Promise<WPComment[]> {
+  const params = new URLSearchParams({ post: String(postId), per_page: "100", status: "any" });
+  const res = await fetch(apiUrl(cfg, `/comments?${params}`), {
+    headers: { Authorization: authHeader(cfg) },
+  });
+  if (!res.ok) return [];
+  return res.json() as Promise<WPComment[]>;
+}
+
+export async function updateComment(cfg: WPConfig, commentId: number, content: string): Promise<WPComment> {
+  const res = await fetch(apiUrl(cfg, `/comments/${commentId}`), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Authorization: authHeader(cfg) },
+    body: JSON.stringify({ content }),
+  });
+  return handleResponse<WPComment>(res);
+}
+
+export async function deleteComment(cfg: WPConfig, commentId: number): Promise<void> {
+  const res = await fetch(apiUrl(cfg, `/comments/${commentId}?force=true`), {
+    method: "DELETE",
+    headers: { Authorization: authHeader(cfg) },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
+export async function createComment(cfg: WPConfig, postId: number, content: string): Promise<WPComment> {
+  const res = await fetch(apiUrl(cfg, "/comments"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authHeader(cfg) },
+    body: JSON.stringify({ post: postId, content }),
+  });
+  return handleResponse<WPComment>(res);
+}
+
 export async function createPost(
   cfg: WPConfig,
   post: WPPostInput

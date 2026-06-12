@@ -245,18 +245,14 @@ export default function Dashboard() {
                           </span>
                         ))}
                         <span className="text-xs text-gray-300">{formatDate(post.modified)}</span>
-                        {post.view_count > 0 && (
-                          <span className="flex items-center gap-0.5 text-xs text-gray-300">
-                            <Eye size={11} />
-                            {post.view_count.toLocaleString()}
-                          </span>
-                        )}
-                        {post.total_comments > 0 && (
-                          <span className="flex items-center gap-0.5 text-xs text-gray-300">
-                            <MessageSquare size={11} />
-                            {post.total_comments}
-                          </span>
-                        )}
+                        <span className="flex items-center gap-0.5 text-xs text-gray-300">
+                          <Eye size={11} />
+                          {post.view_count.toLocaleString()}
+                        </span>
+                        <span className="flex items-center gap-0.5 text-xs text-gray-300">
+                          <MessageSquare size={11} />
+                          {post.total_comments}
+                        </span>
                       </div>
                     </button>
                     <div className="flex-shrink-0 flex flex-col items-end gap-2">
