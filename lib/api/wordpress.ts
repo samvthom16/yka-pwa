@@ -121,7 +121,7 @@ export async function getPostCounts(cfg: WPConfig, authorId?: number): Promise<P
 }
 
 export async function getPost(cfg: WPConfig, id: number): Promise<WPPostListItem> {
-  const res = await fetch(apiUrl(cfg, `/posts/${id}`), {
+  const res = await fetch(apiUrl(cfg, `/posts/${id}?_embed=wp:featuredmedia,wp:term`), {
     headers: { Authorization: authHeader(cfg) },
   });
   return handleResponse<WPPostListItem>(res);

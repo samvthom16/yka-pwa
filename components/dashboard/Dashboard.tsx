@@ -236,10 +236,15 @@ export default function Dashboard() {
               const categories = post._embedded?.["wp:term"]
                 ?.find((group) => group[0]?.taxonomy === "category")
                 ?.filter((t) => t.name !== "Uncategorized") ?? [];
+              const categoryNames = categories.map((c) => c.name);
+              const isEditable =
+                post.status === "draft" ||
+                categoryNames.some((n) => ["Unlisted", "Unreviewed"].includes(n));
+              const destination = isEditable ? `/write?id=${post.id}` : `/posts/${post.id}`;
               return (
                 <li key={post.id}>
                   <button
-                    onClick={() => router.push(`/posts/${post.id}`)}
+                    onClick={() => router.push(destination)}
                     className="group w-full text-left flex items-start gap-4 py-5"
                   >
                     <div className="flex-1 min-w-0">

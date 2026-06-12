@@ -28,7 +28,7 @@ export interface TipTapEditorHandle {
 
 interface TipTapEditorProps {
   onUpdate?: (stats: { wordCount: number; charCount: number }) => void;
-  initialContent?: object;
+  initialContent?: object | string;
 }
 
 interface SlashMenuState {

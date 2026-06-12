@@ -9,7 +9,7 @@ import type { TipTapEditorHandle } from "./TipTapEditor";
 import { useDraft } from "@/hooks/useDraft";
 import { useAuth } from "@/hooks/useAuth";
 import LoginScreen from "@/components/auth/LoginScreen";
-import { createPost } from "@/lib/api/wordpress";
+import { createPost, updatePost, getPost } from "@/lib/api/wordpress";
 import type { PublishStatus } from "./EditorHeader";
 
 const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
@@ -24,12 +24,14 @@ const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
   ),
 });
 
-export default function WritingApp() {
+export default function WritingApp({ postId }: { postId?: number }) {
   const router = useRouter();
   const { user, isLoading: authLoading, login } = useAuth();
   const editorRef = useRef<TipTapEditorHandle>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
+
+  const isEditMode = postId !== undefined;
 
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function WritingApp() {
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
   const [focusMode, setFocusMode] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
-  const [initialContent, setInitialContent] = useState<object | undefined>(undefined);
+  const [initialContent, setInitialContent] = useState<object | string | undefined>(undefined);
   const [publishStatus, setPublishStatus] = useState<PublishStatus>("idle");
   const [publishError, setPublishError] = useState("");
   const [publishedLink, setPublishedLink] = useState("");
@@ -50,9 +52,28 @@ export default function WritingApp() {
   const latestTitle = useRef("");
   const latestThumbnail = useRef<string | null>(null);
 
-  /* ── Restore draft once IndexedDB load resolves ───────────── */
+  /* ── Edit mode: load existing post from WordPress ─────────── */
   useEffect(() => {
-    if (isLoading) return;
+    if (!isEditMode || !user) return;
+    const cfg = { siteUrl: "https://ykasandbox.com", username: user.username, appPassword: user.password };
+    getPost(cfg, postId!).then((post) => {
+      const t = post.title.rendered.replace(/<[^>]*>/g, "");
+      setTitle(t);
+      latestTitle.current = t;
+      setInitialContent(post.content.rendered);
+      const thumb = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ?? null;
+      if (thumb) {
+        setThumbnail(thumb);
+        latestThumbnail.current = thumb;
+      }
+      setDraftLoaded(true);
+    }).catch(() => setDraftLoaded(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, user]);
+
+  /* ── New post: restore draft once IndexedDB load resolves ─── */
+  useEffect(() => {
+    if (isEditMode || isLoading) return;
     if (draft) {
       setTitle(draft.title);
       latestTitle.current = draft.title;
@@ -85,6 +106,7 @@ export default function WritingApp() {
 
   /* ── Debounced save to IndexedDB ──────────────────────────── */
   const triggerSave = useCallback(() => {
+    if (isEditMode) return; // WP is the source of truth; no local draft needed
     setSaveStatus("saving");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(async () => {
@@ -96,7 +118,7 @@ export default function WritingApp() {
       });
       setSaveStatus("saved");
     }, 1500);
-  }, [saveDraft]);
+  }, [saveDraft, isEditMode]);
 
   /* ── Event handlers ───────────────────────────────────────── */
   const handleEditorUpdate = useCallback(
@@ -174,20 +196,26 @@ export default function WritingApp() {
     setPublishError("");
     setPublishedLink("");
 
+    const cfg = { siteUrl: "https://ykasandbox.com", username: user.username, appPassword: user.password };
+
     try {
-      const result = await createPost(
-        { siteUrl: "https://ykasandbox.com", username: user.username, appPassword: user.password },
-        { title: title.trim(), content: html, status: "publish" }
-      );
-      setPublishedLink(result.link ?? "");
+      let link: string;
+      if (isEditMode) {
+        const result = await updatePost(cfg, postId!, { title: title.trim(), content: html, status: "publish" });
+        link = result.link ?? "";
+      } else {
+        const result = await createPost(cfg, { title: title.trim(), content: html, status: "publish" });
+        link = result.link ?? "";
+        await clearDraft();
+      }
+      setPublishedLink(link);
       setPublishStatus("success");
-      await clearDraft();
       setTimeout(() => router.push("/"), 1800);
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Publish failed. Try again.");
       setPublishStatus("error");
     }
-  }, [user, title, editorRef, clearDraft]);
+  }, [user, title, editorRef, clearDraft, isEditMode, postId]);
 
   if (authLoading) {
     return (
