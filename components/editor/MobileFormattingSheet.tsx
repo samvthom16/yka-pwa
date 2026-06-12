@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Editor } from "@tiptap/react";
 import { Bold, Italic, Underline, Link2, Link2Off, Quote } from "lucide-react";
+import { useLinkEditor } from "./useLinkEditor";
 
 interface Props {
   editor: Editor;
@@ -40,47 +41,51 @@ function Sep() {
   return <div className="w-px h-6 bg-gray-100 mx-1 flex-shrink-0 self-center" />;
 }
 
+/* Prevent blur on the editor when pressing a toolbar button */
+const pd =
+  (fn: () => void) =>
+  (e: React.PointerEvent) => {
+    e.preventDefault();
+    fn();
+  };
+
 /* ── Sheet ──────────────────────────────────────────────────── */
 export default function MobileFormattingSheet({ editor, visible }: Props) {
-  const [linkMode, setLinkMode] = useState(false);
-  const [linkInput, setLinkInput] = useState("");
+  const { linkMode, linkInput, setLinkInput, openLink, applyLink, cancelLink } =
+    useLinkEditor(editor, { focus: false });
 
+  /* Lift sheet above the iOS software keyboard when it appears */
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
   useEffect(() => {
-    if (!visible) {
-      setLinkMode(false);
-      setLinkInput("");
-    }
-  }, [visible]);
-
-  const applyLink = useCallback(() => {
-    const url = linkInput.trim();
-    if (url) {
-      editor
-        .chain()
-        .setLink({ href: url.startsWith("http") ? url : `https://${url}` })
-        .run();
-    } else {
-      editor.chain().unsetLink().run();
-    }
-    setLinkMode(false);
-    setLinkInput("");
-  }, [editor, linkInput]);
-
-  // preventDefault keeps editor focused; no .focus() in chains to avoid
-  // triggering onFocus → hideBubble while the sheet is showing
-  const pd =
-    (fn: () => void) =>
-    (e: React.PointerEvent) => {
-      e.preventDefault();
-      fn();
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      setKeyboardOffset(Math.max(0, offset));
     };
+    vv.addEventListener("resize", onResize);
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
+
+  /* Reset link state when sheet hides */
+  useEffect(() => {
+    if (!visible) cancelLink();
+  }, [visible, cancelLink]);
+
+  const sheetStyle: React.CSSProperties = {
+    paddingBottom: "env(safe-area-inset-bottom, 0px)",
+    transform: visible
+      ? keyboardOffset > 0
+        ? `translateY(-${keyboardOffset}px)`
+        : "translateY(0)"
+      : "translateY(100%)",
+  };
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-[150] bg-white border-t border-gray-100
-        shadow-[0_-4px_24px_rgba(0,0,0,0.07)] transition-transform duration-200 ease-out
-        ${visible ? "translate-y-0" : "translate-y-full"}`}
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      className="fixed bottom-0 left-0 right-0 z-[150] bg-white border-t border-gray-100
+        shadow-[0_-4px_24px_rgba(0,0,0,0.07)] transition-transform duration-200 ease-out"
+      style={sheetStyle}
     >
       {/* Drag handle */}
       <div className="flex justify-center pt-2 pb-0.5">
@@ -98,10 +103,7 @@ export default function MobileFormattingSheet({ editor, visible }: Props) {
             onChange={(e) => setLinkInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") applyLink();
-              if (e.key === "Escape") {
-                setLinkMode(false);
-                setLinkInput("");
-              }
+              if (e.key === "Escape") cancelLink();
             }}
             placeholder="Paste or type URL…"
             className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors"
@@ -118,8 +120,7 @@ export default function MobileFormattingSheet({ editor, visible }: Props) {
           <button
             onPointerDown={(e) => {
               e.preventDefault();
-              setLinkMode(false);
-              setLinkInput("");
+              cancelLink();
             }}
             className="h-12 px-3 text-sm text-gray-400 active:text-gray-700 flex-shrink-0"
           >
@@ -198,8 +199,7 @@ export default function MobileFormattingSheet({ editor, visible }: Props) {
               title="Add link"
               onPointerDown={(e) => {
                 e.preventDefault();
-                setLinkInput(editor.getAttributes("link").href ?? "");
-                setLinkMode(true);
+                openLink();
               }}
             >
               <Link2 size={17} />

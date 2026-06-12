@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
+import { NodeSelection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
@@ -58,12 +59,14 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
   function TipTapEditor({ onUpdate, initialContent }, ref) {
     const [slashMenu, setSlashMenu] = useState<SlashMenuState>(INITIAL_SLASH);
     const [bubbleMenu, setBubbleMenu] = useState<BubbleMenuState>(HIDDEN_BUBBLE);
-    const [isMobile, setIsMobile] = useState(false);
+    /* Read synchronously on first render (safe — TipTapEditor is client-only via ssr:false) */
+    const [isMobile, setIsMobile] = useState(
+      () => window.matchMedia("(max-width: 639px)").matches
+    );
     const imageInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
       const mq = window.matchMedia("(max-width: 639px)");
-      setIsMobile(mq.matches);
       const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
       mq.addEventListener("change", handler);
       return () => mq.removeEventListener("change", handler);
@@ -87,9 +90,16 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
       // Clamp bubble below the sticky header (accounts for notch/safe-area on any device)
       const headerEl = document.querySelector("header");
       const minTop = headerEl ? headerEl.getBoundingClientRect().bottom + 8 : 64;
+      // When preferred position (above selection) would overlap the header,
+      // flip to below the selection instead of overlapping the selected text.
+      const preferredTop = rect.top - 52;
+      const top =
+        preferredTop < minTop
+          ? Math.min(rect.bottom + 8, window.innerHeight - 60)
+          : preferredTop;
       setBubbleMenu({
         visible: true,
-        top: Math.max(rect.top - 52, minTop),
+        top,
         left: Math.min(
           Math.max(rect.left + rect.width / 2, 160),
           window.innerWidth - 160
@@ -299,7 +309,10 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         {isMobile && editor && (
           <MobileFormattingSheet
             editor={editor}
-            visible={!editor.state.selection.empty}
+            visible={
+              !editor.state.selection.empty &&
+              !(editor.state.selection instanceof NodeSelection)
+            }
           />
         )}
 
