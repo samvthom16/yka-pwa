@@ -110,7 +110,18 @@ function PreviewModal({
   );
 }
 
-/* ── Publish result modal ─────────────────────────────────────── */
+/* ── Publishing overlay ───────────────────────────────────────── */
+function PublishingOverlay() {
+  return (
+    <div className="fixed inset-0 z-[400] flex flex-col items-center justify-center gap-4 bg-white/90 backdrop-blur-sm">
+      <Loader2 size={28} className="animate-spin text-gray-400" />
+      <p className="text-sm font-medium text-gray-600">Publishing your article…</p>
+      <p className="text-xs text-gray-400">This may take a few seconds</p>
+    </div>
+  );
+}
+
+/* ── Publish error modal ──────────────────────────────────────── */
 function PublishModal({
   status,
   error,
@@ -288,7 +299,10 @@ export default function EditorHeader({
         />
       )}
 
-      {/* Publish result modal */}
+      {/* Publishing overlay */}
+      {publishStatus === "publishing" && <PublishingOverlay />}
+
+      {/* Publish error modal */}
       <PublishModal
         status={publishStatus}
         error={publishError}

@@ -4,30 +4,25 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { useWpConfig } from "@/hooks/useWpConfig";
 import LoginScreen from "@/components/auth/LoginScreen";
-import { getPosts, getPostCounts, getMe, buildAuthHeader } from "@/lib/api/wordpress";
+import LoadingScreen from "@/components/ui/LoadingScreen";
+import { getPosts, getPostCounts, getMe } from "@/lib/api/wordpress";
 import type { WPPostListItem } from "@/lib/api/wordpress";
-import { WP_SITE_URL } from "@/lib/wp-config";
 import { formatDate, stripHtml } from "@/lib/utils";
 import WpImage from "@/components/ui/WpImage";
-import { Loader2, PenLine, RefreshCw, LogOut } from "lucide-react";
+import { Loader2, PenLine, RefreshCw, LogOut, Eye, MessageSquare } from "lucide-react";
 
 const PER_PAGE = 20;
 
 type Filter = "all" | "publish" | "draft";
 
-function wpConfig(user: { username: string; password: string }) {
-  return { siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password };
-}
-
 export default function Dashboard() {
   const router = useRouter();
   const { user, isLoading: authLoading, login, logout } = useAuth();
+  const cfg = useWpConfig(user);
   const [filter, setFilter] = useState<Filter>("all");
   const sentinelRef = useRef<HTMLDivElement>(null);
-
-  const cfg = user ? wpConfig(user) : null;
-  const auth = user ? buildAuthHeader(user.username, user.password) : "";
 
   /* ── Resolve WP author ID ────────────────────────────────────── */
   const { data: me } = useQuery({
@@ -83,13 +78,7 @@ export default function Dashboard() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   /* ── Auth states ─────────────────────────────────────────────── */
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (authLoading) return <LoadingScreen />;
 
   if (!user) return <LoginScreen onLogin={login} />;
 
@@ -224,7 +213,7 @@ export default function Dashboard() {
               const title = stripHtml(post.title.rendered) || "Untitled";
               const excerpt = stripHtml(post.excerpt.rendered);
               const isPublished = post.status === "publish";
-              const thumbnail = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ?? null;
+              const thumbnail = post.featured_image || null;
               const categories = post._embedded?.["wp:term"]
                 ?.find((group) => group[0]?.taxonomy === "category")
                 ?.filter((t) => t.name !== "Uncategorized") ?? [];
@@ -256,13 +245,24 @@ export default function Dashboard() {
                           </span>
                         ))}
                         <span className="text-xs text-gray-300">{formatDate(post.modified)}</span>
+                        {post.view_count > 0 && (
+                          <span className="flex items-center gap-0.5 text-xs text-gray-300">
+                            <Eye size={11} />
+                            {post.view_count.toLocaleString()}
+                          </span>
+                        )}
+                        {post.total_comments > 0 && (
+                          <span className="flex items-center gap-0.5 text-xs text-gray-300">
+                            <MessageSquare size={11} />
+                            {post.total_comments}
+                          </span>
+                        )}
                       </div>
                     </button>
                     <div className="flex-shrink-0 flex flex-col items-end gap-2">
                       {thumbnail && (
                         <WpImage
                           src={thumbnail}
-                          auth={auth}
                           className="w-16 h-16 rounded-lg object-cover"
                         />
                       )}

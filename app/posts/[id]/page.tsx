@@ -4,16 +4,18 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DOMPurify from "dompurify";
 import { useAuth } from "@/hooks/useAuth";
+import { useWpConfig } from "@/hooks/useWpConfig";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import { getPost } from "@/lib/api/wordpress";
 import type { WPPostListItem } from "@/lib/api/wordpress";
-import { WP_SITE_URL } from "@/lib/wp-config";
 import { formatDate, stripHtml } from "@/lib/utils";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Eye, MessageSquare, ThumbsUp } from "lucide-react";
 
 export default function PostPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const cfg = useWpConfig(user);
 
   const [post, setPost] = useState<WPPostListItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,25 +23,16 @@ export default function PostPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { router.replace("/"); return; }
+    if (!cfg) { router.replace("/"); return; }
 
-    getPost(
-      { siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password },
-      Number(id)
-    )
+    getPost(cfg, Number(id))
       .then(setPost)
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load article."))
       .finally(() => setLoading(false));
-  }, [id, user, authLoading, router]);
+  }, [id, cfg, authLoading, router]);
 
   /* ── Loading ─────────────────────────────────────────────────── */
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (authLoading || loading) return <LoadingScreen />;
 
   /* ── Error ───────────────────────────────────────────────────── */
   if (error || !post) {
@@ -56,6 +49,7 @@ export default function PostPage() {
   const title = stripHtml(post.title.rendered) || "Untitled";
   const isPublished = post.status === "publish";
   const safeContent = DOMPurify.sanitize(post.content.rendered);
+  const srcset = post.featured_image_srcset?.join(", ") || undefined;
 
   /* ── Reader ──────────────────────────────────────────────────── */
   return (
@@ -89,13 +83,48 @@ export default function PostPage() {
       </header>
 
       <article className="w-full max-w-[720px] mx-auto px-6 py-12 md:px-8">
+        {post.featured_image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.featured_image}
+            srcSet={srcset}
+            sizes="(max-width: 720px) 100vw, 720px"
+            alt={title}
+            className="w-full rounded-xl object-cover max-h-[400px] mb-10"
+          />
+        )}
         <h1
           className="text-[2.5rem] md:text-[3rem] font-bold leading-tight tracking-tight text-gray-900 mb-4"
           style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}
         >
           {title}
         </h1>
-        <p className="text-sm text-gray-400 mb-10">{formatDate(post.modified)}</p>
+        <div className="flex items-center gap-4 mb-10">
+          <p className="text-sm text-gray-400">{formatDate(post.modified)}</p>
+          {(post.view_count > 0 || post.total_comments > 0 || post.like?.total != null) && (
+            <div className="flex items-center gap-3 text-sm text-gray-400">
+              <span className="text-gray-200">·</span>
+              {post.view_count > 0 && (
+                <span className="flex items-center gap-1">
+                  <Eye size={14} />
+                  {post.view_count.toLocaleString()}
+                </span>
+              )}
+              {post.total_comments > 0 && (
+                <span className="flex items-center gap-1">
+                  <MessageSquare size={14} />
+                  {post.total_comments}
+                </span>
+              )}
+              {post.like?.total != null && (
+                <span className="flex items-center gap-1">
+                  <ThumbsUp size={14} />
+                  {post.like.total}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
         <div className="ProseMirror" dangerouslySetInnerHTML={{ __html: safeContent }} />
       </article>
     </div>

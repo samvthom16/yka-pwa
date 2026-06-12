@@ -5,5 +5,9 @@ export function formatDate(iso: string): string {
 }
 
 export function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").trim();
+  if (typeof window === "undefined") {
+    // SSR fallback — entities stay encoded but that's acceptable server-side
+    return html.replace(/<[^>]*>/g, "").trim();
+  }
+  return new DOMParser().parseFromString(html, "text/html").body.textContent?.trim() ?? "";
 }

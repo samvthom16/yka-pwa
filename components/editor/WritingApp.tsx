@@ -9,8 +9,9 @@ import type { TipTapEditorHandle } from "./TipTapEditor";
 import { useDraft } from "@/hooks/useDraft";
 import { useAuth } from "@/hooks/useAuth";
 import LoginScreen from "@/components/auth/LoginScreen";
-import { createPost, updatePost, getPost, uploadMedia, buildAuthHeader } from "@/lib/api/wordpress";
-import { WP_SITE_URL } from "@/lib/wp-config";
+import { createPost, updatePost, getPost, uploadMedia } from "@/lib/api/wordpress";
+import { useWpConfig } from "@/hooks/useWpConfig";
+import LoadingScreen from "@/components/ui/LoadingScreen";
 import WpImage from "@/components/ui/WpImage";
 import type { PublishStatus } from "./EditorHeader";
 
@@ -57,6 +58,7 @@ async function uploadContentImages(
 export default function WritingApp({ postId }: { postId?: number }) {
   const router = useRouter();
   const { user, isLoading: authLoading, login } = useAuth();
+  const cfg = useWpConfig(user);
   const editorRef = useRef<TipTapEditorHandle>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
@@ -88,14 +90,13 @@ export default function WritingApp({ postId }: { postId?: number }) {
 
   /* ── Edit mode: load existing post from WordPress ─────────── */
   useEffect(() => {
-    if (!isEditMode || !user) return;
-    const cfg = { siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password };
+    if (!isEditMode || !cfg) return;
     getPost(cfg, postId!).then((post) => {
       const t = post.title.rendered.replace(/<[^>]*>/g, "");
       setTitle(t);
       latestTitle.current = t;
       setInitialContent(post.content.rendered);
-      const thumb = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ?? null;
+      const thumb = post.featured_image || null;
       if (thumb) {
         setThumbnail(thumb);
         latestThumbnail.current = thumb;
@@ -103,7 +104,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
       setDraftLoaded(true);
     }).catch(() => setDraftLoaded(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, user]);
+  }, [isEditMode, cfg]);
 
   /* ── New post: restore draft once IndexedDB load resolves ─── */
   useEffect(() => {
@@ -215,7 +216,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
 
   /* ── Publish to WordPress ─────────────────────────────────── */
   const handlePublish = useCallback(async () => {
-    if (!user) return;
+    if (!user || !cfg) return;
 
     const html = editorRef.current?.getHTML() ?? "";
     const plainText = html.replace(/<[^>]*>/g, "").trim();
@@ -233,8 +234,6 @@ export default function WritingApp({ postId }: { postId?: number }) {
 
     setPublishStatus("publishing");
     setPublishError("");
-
-    const cfg = { siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password };
 
     try {
       /* Upload cover photo if a new file was selected */
@@ -269,15 +268,9 @@ export default function WritingApp({ postId }: { postId?: number }) {
       setPublishError(err instanceof Error ? err.message : "Publish failed. Try again.");
       setPublishStatus("error");
     }
-  }, [user, title, editorRef, clearDraft, isEditMode, postId]);
+  }, [user, cfg, title, editorRef, clearDraft, isEditMode, postId]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (authLoading) return <LoadingScreen />;
 
   if (!user) {
     return <LoginScreen onLogin={login} />;
@@ -336,7 +329,6 @@ export default function WritingApp({ postId }: { postId?: number }) {
               ) : (
                 <WpImage
                   src={thumbnail}
-                  auth={buildAuthHeader(user.username, user.password)}
                   alt="Post thumbnail"
                   className="w-full object-cover max-h-[360px]"
                 />

@@ -88,8 +88,14 @@ export interface WPPostListItem {
   sticky: boolean;
   featured_media: number;
   categories: number[];
+  /** Direct URL to the default-size featured image (plugin-added field) */
+  featured_image: string;
+  /** srcset strings for responsive featured image (plugin-added field) */
+  featured_image_srcset: string[];
+  view_count: number;
+  total_comments: number;
+  like: { total: number | null };
   _embedded?: {
-    "wp:featuredmedia"?: Array<{ source_url: string; alt_text: string }>;
     "wp:term"?: Array<Array<{ id: number; name: string; taxonomy: string }>>;
   };
 }
@@ -124,7 +130,7 @@ export async function getPostCounts(cfg: WPConfig, authorId?: number): Promise<P
 }
 
 export async function getPost(cfg: WPConfig, id: number): Promise<WPPostListItem> {
-  const res = await fetch(apiUrl(cfg, `/posts/${id}?_embed=wp:featuredmedia,wp:term`), {
+  const res = await fetch(apiUrl(cfg, `/posts/${id}?_embed=wp:term`), {
     headers: { Authorization: authHeader(cfg) },
   });
   return handleResponse<WPPostListItem>(res);
@@ -143,7 +149,7 @@ export async function getPosts(
     page: String(page),
     orderby: "modified",
     order: "desc",
-    _embed: "wp:featuredmedia,wp:term",
+    _embed: "wp:term",
   });
   if (authorId) params.set("author", String(authorId));
   const res = await fetch(apiUrl(cfg, `/posts?${params}`), {
