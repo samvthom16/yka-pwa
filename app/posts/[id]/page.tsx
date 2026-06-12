@@ -149,16 +149,6 @@ export default function PostPage() {
       </header>
 
       <article className="w-full max-w-[720px] mx-auto px-6 py-12 md:px-8">
-        {post.featured_image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={post.featured_image}
-            srcSet={srcset}
-            sizes="(max-width: 720px) 100vw, 720px"
-            alt={title}
-            className="w-full rounded-xl object-cover max-h-[400px] mb-10"
-          />
-        )}
         <h1
           className="text-[2.5rem] md:text-[3rem] font-bold leading-tight tracking-tight text-gray-900 mb-4"
           style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}
@@ -183,6 +173,16 @@ export default function PostPage() {
             </span>
           </div>
         </div>
+        {post.featured_image && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={post.featured_image}
+            srcSet={srcset}
+            sizes="(max-width: 720px) 100vw, 720px"
+            alt={title}
+            className="w-full rounded-xl object-cover max-h-[400px] mb-10"
+          />
+        )}
         <div className="ProseMirror" dangerouslySetInnerHTML={{ __html: safeContent }} />
 
         {/* Comments */}
