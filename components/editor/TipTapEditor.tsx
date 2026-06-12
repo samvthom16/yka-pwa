@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
-import { NodeSelection } from "@tiptap/pm/state";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
@@ -59,6 +58,7 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
   function TipTapEditor({ onUpdate, initialContent }, ref) {
     const [slashMenu, setSlashMenu] = useState<SlashMenuState>(INITIAL_SLASH);
     const [bubbleMenu, setBubbleMenu] = useState<BubbleMenuState>(HIDDEN_BUBBLE);
+    const [editorFocused, setEditorFocused] = useState(false);
     /* Read synchronously on first render (safe — TipTapEditor is client-only via ssr:false) */
     const [isMobile, setIsMobile] = useState(
       () => window.matchMedia("(max-width: 639px)").matches
@@ -196,7 +196,8 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         });
       },
 
-      onFocus: () => hideBubble(),
+      onFocus: () => { hideBubble(); setEditorFocused(true); },
+      onBlur: () => setEditorFocused(false),
     });
 
     /* ── Expose handle ──────────────────────────────────────── */
@@ -305,14 +306,11 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         {/* ── Editor ─────────────────────────────────────────── */}
         <EditorContent editor={editor} />
 
-        {/* ── Mobile: bottom-sheet formatting toolbar ─────────── */}
+        {/* ── Mobile: keyboard-attached formatting toolbar ────── */}
         {isMobile && editor && (
           <MobileFormattingSheet
             editor={editor}
-            visible={
-              !editor.state.selection.empty &&
-              !(editor.state.selection instanceof NodeSelection)
-            }
+            isFocused={editorFocused}
           />
         )}
 
