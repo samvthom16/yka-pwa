@@ -9,7 +9,7 @@ import type { TipTapEditorHandle } from "./TipTapEditor";
 import { useDraft } from "@/hooks/useDraft";
 import { useAuth } from "@/hooks/useAuth";
 import LoginScreen from "@/components/auth/LoginScreen";
-import { createPost, updatePost, getPost } from "@/lib/api/wordpress";
+import { createPost, updatePost, getPost, uploadMedia } from "@/lib/api/wordpress";
 import type { PublishStatus } from "./EditorHeader";
 
 const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
@@ -155,6 +155,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
+      thumbnailFileRef.current = file;
       const reader = new FileReader();
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;
@@ -167,9 +168,13 @@ export default function WritingApp({ postId }: { postId?: number }) {
     [triggerSave]
   );
 
+  /* Keep a ref to the original File so we can upload it without re-encoding the data URL */
+  const thumbnailFileRef = useRef<File | null>(null);
+
   const removeThumbnail = useCallback(() => {
     setThumbnail(null);
     latestThumbnail.current = null;
+    thumbnailFileRef.current = null;
     if (thumbnailInputRef.current) thumbnailInputRef.current.value = "";
     triggerSave();
   }, [triggerSave]);
@@ -199,12 +204,29 @@ export default function WritingApp({ postId }: { postId?: number }) {
     const cfg = { siteUrl: "https://ykasandbox.com", username: user.username, appPassword: user.password };
 
     try {
+      /* Upload cover photo if a new file was selected */
+      let featuredMediaId: number | undefined;
+      if (thumbnailFileRef.current) {
+        const media = await uploadMedia(cfg, thumbnailFileRef.current);
+        featuredMediaId = media.id;
+      }
+
       let link: string;
       if (isEditMode) {
-        const result = await updatePost(cfg, postId!, { title: title.trim(), content: html, status: "publish" });
+        const result = await updatePost(cfg, postId!, {
+          title: title.trim(),
+          content: html,
+          status: "publish",
+          ...(featuredMediaId !== undefined && { featured_media: featuredMediaId }),
+        });
         link = result.link ?? "";
       } else {
-        const result = await createPost(cfg, { title: title.trim(), content: html, status: "publish" });
+        const result = await createPost(cfg, {
+          title: title.trim(),
+          content: html,
+          status: "publish",
+          ...(featuredMediaId !== undefined && { featured_media: featuredMediaId }),
+        });
         link = result.link ?? "";
         await clearDraft();
       }
