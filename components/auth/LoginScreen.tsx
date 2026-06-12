@@ -50,7 +50,7 @@ export default function LoginScreen({ onLogin }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6">
+    <div className="min-h-dvh bg-white flex flex-col items-center justify-start pt-20 sm:justify-center sm:pt-0 px-6">
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-10 text-center">
@@ -71,13 +71,13 @@ export default function LoginScreen({ onLogin }: Props) {
               autoFocus
               autoComplete="email"
               required
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors"
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-base text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors"
             />
             {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
             <button
               type="submit"
               disabled={loading || !email.trim()}
-              className="mt-4 w-full bg-gray-900 text-white text-sm font-medium py-3 rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="mt-4 w-full bg-gray-900 text-white text-sm font-medium py-3 rounded-lg hover:bg-gray-700 active:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? "Sending…" : "Send code"}
             </button>
@@ -99,20 +99,20 @@ export default function LoginScreen({ onLogin }: Props) {
               placeholder="••••••"
               autoComplete="one-time-code"
               required
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors tracking-widest text-center"
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-base text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors tracking-widest text-center"
             />
             {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
             <button
               type="submit"
               disabled={loading || !otp.trim()}
-              className="mt-4 w-full bg-gray-900 text-white text-sm font-medium py-3 rounded-lg hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="mt-4 w-full bg-gray-900 text-white text-sm font-medium py-3 rounded-lg hover:bg-gray-700 active:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? "Verifying…" : "Verify & sign in"}
             </button>
             <button
               type="button"
               onClick={() => { setStep("email"); setOtp(""); setError(""); }}
-              className="mt-3 w-full text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="mt-3 w-full min-h-[44px] text-xs text-gray-400 hover:text-gray-600 active:text-gray-600 transition-colors"
             >
               Use a different email
             </button>

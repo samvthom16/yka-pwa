@@ -37,11 +37,11 @@ function IconBtn({
       onClick={onClick}
       title={title}
       className={`
-        flex items-center justify-center w-8 h-8 rounded-lg transition-colors
+        flex items-center justify-center w-11 h-11 rounded-lg transition-colors
         ${
           active
             ? "bg-gray-900 text-white"
-            : "text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            : "text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700"
         }
       `}
     >
@@ -72,13 +72,13 @@ function PreviewModal({
           </span>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 active:text-gray-700 active:bg-gray-100 transition-colors text-lg leading-none"
           >
             ✕
           </button>
         </div>
         {/* Preview content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 overscroll-contain">
           {title && (
             <h1
               className="text-4xl font-bold tracking-tight text-gray-900 mb-8 break-words"
@@ -142,7 +142,7 @@ function PublishModal({
           <h2 className="text-base font-semibold text-gray-900">Publish failed</h2>
         </div>
         <p className="text-sm text-gray-500 mb-4 break-words">{error}</p>
-        <button onClick={onClose} className="w-full text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 py-2.5 rounded-lg transition-colors">
+        <button onClick={onClose} className="w-full text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 active:bg-gray-800 py-2.5 rounded-lg transition-colors">
           OK
         </button>
       </div>
@@ -214,18 +214,19 @@ export default function EditorHeader({
     <>
       <header
         className={`
-          sticky top-0 z-40 flex items-center justify-between h-14 px-5
+          safe-top sticky top-0 z-40
           bg-white/90 backdrop-blur-md border-b border-gray-100
           transition-opacity duration-400
-          ${focusMode ? "opacity-0 hover:opacity-100" : "opacity-100"}
+          ${focusMode ? "opacity-20 hover:opacity-100" : "opacity-100"}
         `}
       >
+        <div className="flex items-center justify-between h-14 px-5">
         {/* ── Left: back + brand + title ─────────────────────── */}
         <div className="flex items-center gap-2.5 min-w-0">
           <button
             onClick={onBack}
             title="Back to dashboard"
-            className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors flex-shrink-0"
+            className="flex items-center justify-center w-11 h-11 -ml-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors flex-shrink-0"
           >
             <ArrowLeft size={15} />
           </button>
@@ -277,15 +278,16 @@ export default function EditorHeader({
           <button
             onClick={onPublish}
             disabled={publishStatus === "publishing"}
-            className="flex items-center gap-1 ml-2 pl-4 pr-3 h-8 rounded-full text-[13px] font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 ml-1 pl-4 pr-4 h-11 rounded-full text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {publishStatus === "publishing" ? (
-              <Loader2 size={12} className="animate-spin" />
+              <Loader2 size={13} className="animate-spin" />
             ) : (
-              <Upload size={12} />
+              <Upload size={13} />
             )}
             <span>{publishStatus === "publishing" ? "Publishing…" : "Publish"}</span>
           </button>
+        </div>
         </div>
       </header>
 

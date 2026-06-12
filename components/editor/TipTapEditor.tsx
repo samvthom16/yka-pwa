@@ -74,13 +74,15 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         hideBubble();
         return;
       }
+      // Clamp bubble below the sticky header (accounts for notch/safe-area on any device)
+      const headerEl = document.querySelector("header");
+      const minTop = headerEl ? headerEl.getBoundingClientRect().bottom + 8 : 64;
       setBubbleMenu({
         visible: true,
-        // Position centred above the selection; clamp to viewport edges
-        top: rect.top - 52,
+        top: Math.max(rect.top - 52, minTop),
         left: Math.min(
-          Math.max(rect.left + rect.width / 2, 150),
-          window.innerWidth - 150
+          Math.max(rect.left + rect.width / 2, 160),
+          window.innerWidth - 160
         ),
       });
     }, [hideBubble]);
@@ -184,6 +186,17 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
       focus: () => editor?.commands.focus("end"),
     }));
 
+    /* ── Emit stats once on initial load ───────────────────── */
+    useEffect(() => {
+      if (!editor) return;
+      type CCStorage = { words?: () => number; characters?: () => number };
+      const cc = editor.storage.characterCount as CCStorage | undefined;
+      onUpdate?.({
+        wordCount: typeof cc?.words === "function" ? cc.words() : 0,
+        charCount: typeof cc?.characters === "function" ? cc.characters() : 0,
+      });
+    }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
+
     /* ── Escape closes slash menu ────────────────────────────── */
     useEffect(() => {
       const handler = (e: KeyboardEvent) => {
@@ -196,10 +209,15 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
       return () => window.removeEventListener("keydown", handler, true);
     }, [slashMenu.isOpen, closeSlashMenu]);
 
-    /* ── Hide bubble on scroll ───────────────────────────────── */
+    /* ── Hide bubble on scroll (debounced to avoid iOS bounce) ── */
     useEffect(() => {
-      window.addEventListener("scroll", hideBubble, { passive: true });
-      return () => window.removeEventListener("scroll", hideBubble);
+      let lastY = window.scrollY;
+      const onScroll = () => {
+        if (Math.abs(window.scrollY - lastY) > 2) hideBubble();
+        lastY = window.scrollY;
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => window.removeEventListener("scroll", onScroll);
     }, [hideBubble]);
 
     /* ── Execute slash command ───────────────────────────────── */

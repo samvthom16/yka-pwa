@@ -100,35 +100,37 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-dvh bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-40 flex items-center justify-between h-14 px-5 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 bg-gray-900 rounded-md flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-[11px] font-black tracking-tighter">Y</span>
+      <header className="safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
+        <div className="flex items-center justify-between h-14 px-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 bg-gray-900 rounded-md flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-[11px] font-black tracking-tighter">Y</span>
+            </div>
+            <span className="text-sm font-medium text-gray-700">{user.name || user.username}</span>
+            {/* Subtle background-refetch indicator */}
+            {isBackgroundRefetch && (
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse" />
+            )}
           </div>
-          <span className="text-sm font-medium text-gray-700">{user.name || user.username}</span>
-          {/* Subtle background-refetch indicator */}
-          {isBackgroundRefetch && (
-            <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse" />
-          )}
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => router.push("/write")}
-            className="flex items-center gap-1.5 pl-3 pr-4 h-8 rounded-full text-[13px] font-medium bg-gray-900 text-white hover:bg-gray-700 transition-colors"
-          >
-            <PenLine size={13} />
-            <span>New article</span>
-          </button>
-          <button
-            onClick={logout}
-            title="Sign out"
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-          >
-            <LogOut size={15} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => router.push("/write")}
+              className="flex items-center gap-1.5 pl-4 pr-5 h-11 rounded-full text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 transition-colors"
+            >
+              <PenLine size={14} />
+              <span>New article</span>
+            </button>
+            <button
+              onClick={logout}
+              title="Sign out"
+              className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -140,7 +142,7 @@ export default function Dashboard() {
           <button
             onClick={handleRefresh}
             disabled={postsLoading || postsRefetching}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 disabled:opacity-40 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 active:text-gray-700 disabled:opacity-40 transition-colors py-2 px-2 -mr-2"
           >
             <RefreshCw size={12} className={postsRefetching ? "animate-spin" : ""} />
             Refresh
@@ -157,7 +159,7 @@ export default function Dashboard() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${active ? "text-gray-900" : "text-gray-400 hover:text-gray-600"}`}
+                className={`relative flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors ${active ? "text-gray-900" : "text-gray-400 hover:text-gray-600 active:text-gray-600"}`}
               >
                 {label}
                 {count > 0 && (
@@ -223,7 +225,7 @@ export default function Dashboard() {
                 categoryNames.some((n) => ["Unlisted", "Unreviewed"].includes(n));
               return (
                 <li key={post.id}>
-                  <div className="group flex items-start gap-4 py-5">
+                  <div className="group flex items-start gap-4 py-5 -mx-2 px-2 rounded-xl active:bg-gray-50 transition-colors">
                     <button
                       onClick={() => router.push(`/posts/${post.id}`)}
                       className="flex-1 min-w-0 text-left"
@@ -265,7 +267,7 @@ export default function Dashboard() {
                       {isEditable && (
                         <button
                           onClick={() => router.push(`/write?id=${post.id}`)}
-                          className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-gray-700 transition-colors"
+                          className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-gray-700 active:text-gray-700 transition-colors py-2 px-2 -mr-2"
                         >
                           <PenLine size={11} />
                           Edit
