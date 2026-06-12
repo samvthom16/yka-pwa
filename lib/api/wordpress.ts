@@ -82,6 +82,13 @@ export interface WPPostListItem {
   modified: string;
   link: string;
   excerpt: { rendered: string };
+  sticky: boolean;
+  featured_media: number;
+  categories: number[];
+  _embedded?: {
+    "wp:featuredmedia"?: Array<{ source_url: string; alt_text: string }>;
+    "wp:term"?: Array<Array<{ id: number; name: string; taxonomy: string }>>;
+  };
 }
 
 /* ─── Posts ──────────────────────────────────────────────────── */
@@ -133,6 +140,7 @@ export async function getPosts(
     page: String(page),
     orderby: "modified",
     order: "desc",
+    _embed: "wp:featuredmedia,wp:term",
   });
   if (authorId) params.set("author", String(authorId));
   const res = await fetch(apiUrl(cfg, `/posts?${params}`), {

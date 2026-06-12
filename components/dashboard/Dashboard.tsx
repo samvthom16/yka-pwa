@@ -197,8 +197,10 @@ export default function Dashboard() {
               <div key={i} className="animate-pulse flex items-start gap-4 py-4 border-b border-gray-100">
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-gray-100 rounded w-2/3" />
-                  <div className="h-3 bg-gray-100 rounded w-1/3" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  <div className="h-3 bg-gray-100 rounded w-1/4" />
                 </div>
+                <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0" />
               </div>
             ))}
           </div>
@@ -230,25 +232,43 @@ export default function Dashboard() {
               const title = stripHtml(post.title.rendered) || "Untitled";
               const excerpt = stripHtml(post.excerpt.rendered);
               const isPublished = post.status === "publish";
+              const thumbnail = post._embedded?.["wp:featuredmedia"]?.[0]?.source_url ?? null;
+              const categories = post._embedded?.["wp:term"]
+                ?.find((group) => group[0]?.taxonomy === "category")
+                ?.filter((t) => t.name !== "Uncategorized") ?? [];
               return (
                 <li key={post.id}>
                   <button
                     onClick={() => router.push(`/posts/${post.id}`)}
-                    className="group w-full text-left flex items-start justify-between gap-4 py-5"
+                    className="group w-full text-left flex items-start gap-4 py-5"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 group-hover:text-gray-500 transition-colors truncate">
+                      <p className="text-sm font-semibold text-gray-900 group-hover:text-gray-500 transition-colors line-clamp-2">
                         {title}
                       </p>
                       {excerpt && (
-                        <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{excerpt}</p>
+                        <p className="mt-0.5 text-xs text-gray-400 line-clamp-2">{excerpt}</p>
                       )}
-                      <p className="mt-1 text-xs text-gray-300">{formatDate(post.modified)}</p>
+                      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? "bg-green-500" : "bg-gray-400"}`} />
+                          {isPublished ? "Published" : "Draft"}
+                        </span>
+                        {categories.map((cat) => (
+                          <span key={cat.id} className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                            {cat.name}
+                          </span>
+                        ))}
+                        <span className="text-xs text-gray-300">{formatDate(post.modified)}</span>
+                      </div>
                     </div>
-                    <span className={`flex-shrink-0 mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? "bg-green-500" : "bg-gray-400"}`} />
-                      {isPublished ? "Published" : "Draft"}
-                    </span>
+                    {thumbnail && (
+                      <img
+                        src={thumbnail}
+                        alt=""
+                        className="flex-shrink-0 w-16 h-16 rounded-lg object-cover bg-gray-100"
+                      />
+                    )}
                   </button>
                 </li>
               );
