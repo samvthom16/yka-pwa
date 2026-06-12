@@ -5,6 +5,20 @@
   --foreground: #111111;
 }
 
+/* ── Mobile / PWA shell ──────────────────────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a {
+  touch-action: manipulation;
+}
+
+/* Absorbs the notch / Dynamic Island height on sticky headers */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -160,8 +174,14 @@ body {
   transition: text-decoration-color 0.15s;
 }
 
-.ProseMirror a:hover {
+.ProseMirror a:hover,
+.ProseMirror a:active {
   text-decoration-color: #111;
+}
+
+/* ── Read-only post view — same styles, no editor min-height ── */
+.ProseMirror.reader {
+  min-height: 0;
 }
 
 /* ── Inline code ── */

@@ -128,15 +128,19 @@ export default function SlashCommandMenu({
     return () => window.removeEventListener("keydown", handler, true);
   }, [filtered, activeIndex, onSelect]);
 
-  /* Close on outside click */
+  /* Close on outside click or touch */
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("mousedown", handler as (e: MouseEvent) => void);
+    document.addEventListener("touchstart", handler as (e: TouchEvent) => void, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handler as (e: MouseEvent) => void);
+      document.removeEventListener("touchstart", handler as (e: TouchEvent) => void);
+    };
   }, [onClose]);
 
   /* Scroll active item into view */
@@ -151,7 +155,13 @@ export default function SlashCommandMenu({
     <div
       ref={menuRef}
       className="animate-slide-up fixed z-[200] w-72 rounded-xl bg-white shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden"
-      style={{ top: position.top, left: position.left }}
+      style={{
+        top: Math.min(
+          position.top,
+          (window.visualViewport?.height ?? window.innerHeight) - 340
+        ),
+        left: position.left,
+      }}
     >
       {/* Header */}
       <div className="px-3.5 pt-3 pb-1.5 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">
@@ -166,14 +176,14 @@ export default function SlashCommandMenu({
           return (
             <li key={cmd.id} data-item>
               <button
-                onMouseEnter={() => setActiveIndex(index)}
-                onMouseDown={(e) => {
+                onPointerEnter={() => setActiveIndex(index)}
+                onPointerDown={(e) => {
                   e.preventDefault();
                   onSelect(cmd.id);
                 }}
                 className={`
-                  w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors
-                  ${isActive ? "bg-gray-50" : "hover:bg-gray-50"}
+                  w-full flex items-center gap-3 px-3 py-3 text-left transition-colors
+                  ${isActive ? "bg-gray-50" : "hover:bg-gray-50 active:bg-gray-50"}
                 `}
               >
                 <span

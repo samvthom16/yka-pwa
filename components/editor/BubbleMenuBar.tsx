@@ -30,17 +30,17 @@ function ToolBtn({
 }) {
   return (
     <button
-      onMouseDown={(e) => {
+      onPointerDown={(e) => {
         e.preventDefault();
         onClick();
       }}
       title={title}
       className={`
-        flex items-center justify-center w-7 h-7 rounded transition-colors
+        flex items-center justify-center w-10 h-10 rounded transition-colors
         ${
           active
             ? "bg-white text-gray-900"
-            : "text-gray-400 hover:text-white hover:bg-white/10"
+            : "text-gray-400 hover:text-white hover:bg-white/10 active:bg-white/10 active:text-white"
         }
       `}
     >
@@ -92,20 +92,20 @@ export default function BubbleMenuBar({ editor, onClose: _onClose }: BubbleMenuB
           className="bg-transparent text-white text-base outline-none w-52 placeholder:text-gray-600"
         />
         <button
-          onMouseDown={(e) => {
+          onPointerDown={(e) => {
             e.preventDefault();
             applyLink();
           }}
-          className="text-xs font-medium text-blue-400 hover:text-blue-300 px-1 flex-shrink-0"
+          className="text-xs font-medium text-blue-400 hover:text-blue-300 active:text-blue-200 px-2 py-2 flex-shrink-0"
         >
           Apply
         </button>
         <button
-          onMouseDown={(e) => {
+          onPointerDown={(e) => {
             e.preventDefault();
             setLinkMode(false);
           }}
-          className="text-gray-500 hover:text-gray-300 text-xs flex-shrink-0"
+          className="text-gray-500 hover:text-gray-300 active:text-gray-200 text-xs px-2 py-2 flex-shrink-0"
         >
           ✕
         </button>
@@ -115,7 +115,7 @@ export default function BubbleMenuBar({ editor, onClose: _onClose }: BubbleMenuB
 
   /* Default toolbar */
   return (
-    <div className="animate-pop-in flex items-center gap-0.5 bg-gray-950 rounded-lg px-2 py-1.5 shadow-2xl border border-white/10">
+    <div className="animate-pop-in flex items-center gap-1 bg-gray-950 rounded-lg px-3 py-1 shadow-2xl border border-white/10">
       {/* Heading toggles */}
       <ToolBtn
         active={editor.isActive("heading", { level: 1 })}

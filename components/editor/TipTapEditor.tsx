@@ -74,13 +74,16 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         hideBubble();
         return;
       }
+      const safeTop = parseFloat(
+        getComputedStyle(document.documentElement).paddingTop
+      ) || 60;
       setBubbleMenu({
         visible: true,
-        // Position centred above the selection; clamp to viewport edges
-        top: rect.top - 52,
+        // Position centred above the selection; clamp top to below safe-area header
+        top: Math.max(rect.top - 52, safeTop + 8),
         left: Math.min(
-          Math.max(rect.left + rect.width / 2, 150),
-          window.innerWidth - 150
+          Math.max(rect.left + rect.width / 2, 160),
+          window.innerWidth - 160
         ),
       });
     }, [hideBubble]);
@@ -207,10 +210,15 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
       return () => window.removeEventListener("keydown", handler, true);
     }, [slashMenu.isOpen, closeSlashMenu]);
 
-    /* ── Hide bubble on scroll ───────────────────────────────── */
+    /* ── Hide bubble on scroll (debounced to avoid iOS bounce) ── */
     useEffect(() => {
-      window.addEventListener("scroll", hideBubble, { passive: true });
-      return () => window.removeEventListener("scroll", hideBubble);
+      let lastY = window.scrollY;
+      const onScroll = () => {
+        if (Math.abs(window.scrollY - lastY) > 2) hideBubble();
+        lastY = window.scrollY;
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      return () => window.removeEventListener("scroll", onScroll);
     }, [hideBubble]);
 
     /* ── Execute slash command ───────────────────────────────── */
