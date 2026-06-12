@@ -74,6 +74,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
   const [initialContent, setInitialContent] = useState<object | string | undefined>(undefined);
   const [publishStatus, setPublishStatus] = useState<PublishStatus>("idle");
   const [publishError, setPublishError] = useState("");
+  const [editorFocused, setEditorFocused] = useState(false);
 
   const { draft, saveDraft, clearDraft, isLoading } = useDraft("default");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -283,6 +284,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
         title={title}
         thumbnail={thumbnail}
         isEditMode={isEditMode}
+        editorFocused={editorFocused}
         saveStatus={saveStatus}
         editorRef={editorRef}
         publishStatus={publishStatus}
@@ -372,6 +374,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
             ref={editorRef}
             onUpdate={handleEditorUpdate}
             initialContent={initialContent}
+            onFocusChange={setEditorFocused}
           />
         )}
       </main>

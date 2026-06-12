@@ -30,6 +30,7 @@ export interface TipTapEditorHandle {
 interface TipTapEditorProps {
   onUpdate?: (stats: { wordCount: number; charCount: number }) => void;
   initialContent?: object | string;
+  onFocusChange?: (focused: boolean) => void;
 }
 
 interface SlashMenuState {
@@ -55,7 +56,7 @@ const HIDDEN_BUBBLE: BubbleMenuState = { visible: false, top: 0, left: 0 };
 /* ─────────────────────────────────────────────────────────────── */
 
 const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
-  function TipTapEditor({ onUpdate, initialContent }, ref) {
+  function TipTapEditor({ onUpdate, initialContent, onFocusChange }, ref) {
     const [slashMenu, setSlashMenu] = useState<SlashMenuState>(INITIAL_SLASH);
     const [bubbleMenu, setBubbleMenu] = useState<BubbleMenuState>(HIDDEN_BUBBLE);
     const [editorFocused, setEditorFocused] = useState(false);
@@ -196,8 +197,8 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         });
       },
 
-      onFocus: () => { hideBubble(); setEditorFocused(true); },
-      onBlur: () => setEditorFocused(false),
+      onFocus: () => { hideBubble(); setEditorFocused(true); onFocusChange?.(true); },
+      onBlur: () => { setEditorFocused(false); onFocusChange?.(false); },
     });
 
     /* ── Expose handle ──────────────────────────────────────── */
