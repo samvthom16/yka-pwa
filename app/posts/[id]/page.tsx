@@ -201,7 +201,7 @@ export default function PostPage() {
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Write a comment…"
               rows={3}
-              className="w-full text-sm text-gray-800 placeholder:text-gray-300 border border-gray-200 rounded-xl px-4 py-3 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+              className="w-full text-base text-gray-800 placeholder:text-gray-300 border border-gray-200 rounded-xl px-4 py-3 resize-none focus:outline-none focus:border-gray-400 transition-colors"
             />
             {commentError && (
               <p className="mt-1.5 text-xs text-red-500">{commentError}</p>
@@ -276,7 +276,7 @@ export default function PostPage() {
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
                           rows={3}
-                          className="w-full text-sm text-gray-800 border border-gray-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-gray-400 transition-colors"
+                          className="w-full text-base text-gray-800 border border-gray-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                         />
                         <div className="flex items-center gap-2 mt-1.5">
                           <button

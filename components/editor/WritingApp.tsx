@@ -278,7 +278,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
 
   return (
     <div
-      className={`flex flex-col min-h-screen bg-white transition-all duration-300 ${
+      className={`flex flex-col min-h-dvh bg-white transition-all duration-300 ${
         focusMode ? "editor-focus-mode" : ""
       }`}
     >

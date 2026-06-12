@@ -71,7 +71,7 @@ export default function LoginScreen({ onLogin }: Props) {
               autoFocus
               autoComplete="email"
               required
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors"
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-base text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors"
             />
             {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
             <button
@@ -99,7 +99,7 @@ export default function LoginScreen({ onLogin }: Props) {
               placeholder="••••••"
               autoComplete="one-time-code"
               required
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors tracking-widest text-center"
+              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-base text-gray-900 placeholder:text-gray-300 outline-none focus:border-gray-400 transition-colors tracking-widest text-center"
             />
             {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
             <button

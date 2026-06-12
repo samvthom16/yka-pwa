@@ -89,7 +89,7 @@ export default function BubbleMenuBar({ editor, onClose: _onClose }: BubbleMenuB
             if (e.key === "Escape") setLinkMode(false);
           }}
           placeholder="Paste URL…"
-          className="bg-transparent text-white text-sm outline-none w-52 placeholder:text-gray-600"
+          className="bg-transparent text-white text-base outline-none w-52 placeholder:text-gray-600"
         />
         <button
           onMouseDown={(e) => {
