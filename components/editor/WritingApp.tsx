@@ -296,7 +296,10 @@ export default function WritingApp({ postId }: { postId?: number }) {
         onBack={() => router.push("/")}
       />
 
-      <main className="flex-1 w-full max-w-[720px] mx-auto px-6 pb-20 pt-12 md:px-8">
+      <main
+        className="flex-1 w-full max-w-[720px] mx-auto px-6 pt-12 md:px-8"
+        style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom, 0px))" }}
+      >
         {/* Post title — textarea auto-grows with content */}
         <textarea
           ref={titleRef}

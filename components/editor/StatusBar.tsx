@@ -22,33 +22,36 @@ export default function StatusBar({
   return (
     <footer
       className={`
-        fixed bottom-0 left-0 right-0 z-40 flex items-center justify-center gap-4
-        h-9 px-6 bg-white/80 backdrop-blur-sm border-t border-gray-100
+        fixed bottom-0 left-0 right-0 z-40
+        bg-white/80 backdrop-blur-sm border-t border-gray-100
         text-[11px] text-gray-400 transition-opacity duration-400
         ${focusMode ? "opacity-0 hover:opacity-100" : "opacity-100"}
       `}
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <span>{plural(wordCount, "word")}</span>
-      <Dot />
-      <span>{plural(charCount, "character")}</span>
-      <Dot />
-      <span>{readingTime} min read</span>
-      <Dot />
-      <span
-        className={
-          saveStatus === "saved"
-            ? "text-green-500"
+      <div className="flex items-center justify-center gap-4 h-9 px-6">
+        <span>{plural(wordCount, "word")}</span>
+        <Dot />
+        <span>{plural(charCount, "character")}</span>
+        <Dot />
+        <span>{readingTime} min read</span>
+        <Dot />
+        <span
+          className={
+            saveStatus === "saved"
+              ? "text-green-500"
+              : saveStatus === "saving"
+                ? "text-gray-400"
+                : "text-amber-500"
+          }
+        >
+          {saveStatus === "saved"
+            ? "All changes saved"
             : saveStatus === "saving"
-              ? "text-gray-400"
-              : "text-amber-500"
-        }
-      >
-        {saveStatus === "saved"
-          ? "All changes saved"
-          : saveStatus === "saving"
-            ? "Saving…"
-            : "Unsaved changes"}
-      </span>
+              ? "Saving…"
+              : "Unsaved changes"}
+        </span>
+      </div>
     </footer>
   );
 }
