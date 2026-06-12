@@ -9,6 +9,7 @@ export type PublishStatus = "idle" | "publishing" | "success" | "error";
 interface EditorHeaderProps {
   title: string;
   thumbnail: string | null;
+  isEditMode: boolean;
   saveStatus: "saved" | "saving" | "unsaved";
   editorRef: RefObject<TipTapEditorHandle | null>;
   publishStatus: PublishStatus;
@@ -109,11 +110,13 @@ function PreviewModal({
 }
 
 /* ── Publishing overlay ───────────────────────────────────────── */
-function PublishingOverlay() {
+function PublishingOverlay({ isEditMode }: { isEditMode: boolean }) {
   return (
     <div className="fixed inset-0 z-[400] flex flex-col items-center justify-center gap-4 bg-white/90 backdrop-blur-sm">
       <Loader2 size={28} className="animate-spin text-gray-400" />
-      <p className="text-sm font-medium text-gray-600">Publishing your article…</p>
+      <p className="text-sm font-medium text-gray-600">
+        {isEditMode ? "Updating your article…" : "Publishing your article…"}
+      </p>
       <p className="text-xs text-gray-400">This may take a few seconds</p>
     </div>
   );
@@ -152,6 +155,7 @@ function PublishModal({
 export default function EditorHeader({
   title,
   thumbnail,
+  isEditMode,
   saveStatus,
   editorRef,
   publishStatus,
@@ -182,8 +186,8 @@ export default function EditorHeader({
           >
             <ArrowLeft size={15} />
           </button>
-          <div className="flex-shrink-0 w-6 h-6 bg-gray-900 rounded-md flex items-center justify-center">
-            <span className="text-white text-[11px] font-black tracking-tighter">Y</span>
+          <div className="flex-shrink-0 w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center">
+            <span className="text-white text-sm font-black tracking-tighter">Y</span>
           </div>
           {title && (
             <span className="text-sm text-gray-400 truncate max-w-[220px] hidden sm:block">
@@ -225,7 +229,11 @@ export default function EditorHeader({
             ) : (
               <Upload size={13} />
             )}
-            <span>{publishStatus === "publishing" ? "Publishing…" : "Publish"}</span>
+            <span>
+              {publishStatus === "publishing"
+                ? isEditMode ? "Updating…" : "Publishing…"
+                : isEditMode ? "Update" : "Publish"}
+            </span>
           </button>
         </div>
         </div>
@@ -242,7 +250,7 @@ export default function EditorHeader({
       )}
 
       {/* Publishing overlay */}
-      {publishStatus === "publishing" && <PublishingOverlay />}
+      {publishStatus === "publishing" && <PublishingOverlay isEditMode={isEditMode} />}
 
       {/* Publish error modal */}
       <PublishModal

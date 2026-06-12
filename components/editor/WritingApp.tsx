@@ -282,6 +282,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
       <EditorHeader
         title={title}
         thumbnail={thumbnail}
+        isEditMode={isEditMode}
         saveStatus={saveStatus}
         editorRef={editorRef}
         publishStatus={publishStatus}
