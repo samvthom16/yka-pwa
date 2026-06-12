@@ -184,6 +184,17 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
       focus: () => editor?.commands.focus("end"),
     }));
 
+    /* ── Emit stats once on initial load ───────────────────── */
+    useEffect(() => {
+      if (!editor) return;
+      type CCStorage = { words?: () => number; characters?: () => number };
+      const cc = editor.storage.characterCount as CCStorage | undefined;
+      onUpdate?.({
+        wordCount: typeof cc?.words === "function" ? cc.words() : 0,
+        charCount: typeof cc?.characters === "function" ? cc.characters() : 0,
+      });
+    }, [editor]); // eslint-disable-line react-hooks/exhaustive-deps
+
     /* ── Escape closes slash menu ────────────────────────────── */
     useEffect(() => {
       const handler = (e: KeyboardEvent) => {
