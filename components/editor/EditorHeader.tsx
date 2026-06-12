@@ -1,7 +1,7 @@
 "use client";
 
 import { RefObject, useCallback, useState } from "react";
-import { Focus, Eye, Download, Upload, Check, Loader2, ArrowLeft } from "lucide-react";
+import { Eye, Upload, Check, Loader2, ArrowLeft } from "lucide-react";
 import type { TipTapEditorHandle } from "./TipTapEditor";
 
 export type PublishStatus = "idle" | "publishing" | "success" | "error";
@@ -9,10 +9,8 @@ export type PublishStatus = "idle" | "publishing" | "success" | "error";
 interface EditorHeaderProps {
   title: string;
   thumbnail: string | null;
-  focusMode: boolean;
   saveStatus: "saved" | "saving" | "unsaved";
   editorRef: RefObject<TipTapEditorHandle | null>;
-  onToggleFocusMode: () => void;
   publishStatus: PublishStatus;
   publishError: string;
   onPublish: () => void;
@@ -154,10 +152,8 @@ function PublishModal({
 export default function EditorHeader({
   title,
   thumbnail,
-  focusMode,
   saveStatus,
   editorRef,
-  onToggleFocusMode,
   publishStatus,
   publishError,
   onPublish,
@@ -173,53 +169,9 @@ export default function EditorHeader({
     setShowPreview(true);
   }, [editorRef]);
 
-  const handleExport = useCallback(() => {
-    const html = editorRef.current?.getHTML() ?? "";
-    const safeTitle = title || "untitled";
-    const doc = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${safeTitle}</title>
-  <style>
-    body{max-width:720px;margin:0 auto;padding:3rem 1.5rem;font-family:Georgia,serif;font-size:1.125rem;line-height:1.8;color:#374151}
-    h1,h2,h3{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;margin-top:2rem}
-    h1{font-size:2rem;font-weight:700}h2{font-size:1.5rem;font-weight:700}h3{font-size:1.2rem;font-weight:600}
-    blockquote{border-left:3px solid #111;padding-left:1.5rem;margin:2rem 0;font-style:italic;color:#555}
-    img{max-width:100%;height:auto;border-radius:6px;margin:1.5rem 0}
-    a{color:#111;text-decoration:underline}
-    code{background:#f5f5f5;border-radius:4px;padding:.15em .4em;font-family:monospace;font-size:.875em;color:#d63031}
-    pre{background:#1a1a1a;color:#f8f8f2;border-radius:8px;padding:1.25rem 1.5rem;overflow-x:auto}
-    pre code{background:none;color:inherit;padding:0}
-    hr{border:none;border-top:1px solid #e5e7eb;margin:2.5rem 0}
-    ul{list-style:disc;padding-left:1.5rem}ol{list-style:decimal;padding-left:1.5rem}
-  </style>
-</head>
-<body>
-  ${title ? `<h1>${safeTitle}</h1>` : ""}
-  ${html}
-</body>
-</html>`;
-    const blob = new Blob([doc], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${safeTitle.replace(/\s+/g, "-").toLowerCase()}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [editorRef, title]);
-
   return (
     <>
-      <header
-        className={`
-          safe-top sticky top-0 z-40
-          bg-white/90 backdrop-blur-md border-b border-gray-100
-          transition-opacity duration-400
-          ${focusMode ? "opacity-20 hover:opacity-100" : "opacity-100"}
-        `}
-      >
+      <header className="safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
         {/* ── Left: back + brand + title ─────────────────────── */}
         <div className="flex items-center gap-2.5 min-w-0">
@@ -258,20 +210,8 @@ export default function EditorHeader({
             )}
           </div>
 
-          <IconBtn
-            title={focusMode ? "Exit focus mode" : "Focus mode"}
-            active={focusMode}
-            onClick={onToggleFocusMode}
-          >
-            <Focus size={15} />
-          </IconBtn>
-
           <IconBtn title="Preview" onClick={handlePreview}>
             <Eye size={15} />
-          </IconBtn>
-
-          <IconBtn title="Export as HTML" onClick={handleExport}>
-            <Download size={15} />
           </IconBtn>
 
           {/* Publish button */}
