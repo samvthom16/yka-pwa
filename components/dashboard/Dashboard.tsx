@@ -29,7 +29,7 @@ export default function Dashboard() {
     queryKey: ["me", user?.username],
     queryFn: () => getMe(cfg!),
     enabled: !!cfg,
-    staleTime: Infinity, // user ID never changes
+    staleTime: Infinity,
   });
 
   const authorId = me?.id;
@@ -79,7 +79,6 @@ export default function Dashboard() {
 
   /* ── Auth states ─────────────────────────────────────────────── */
   if (authLoading) return <LoadingScreen />;
-
   if (!user) return <LoginScreen onLogin={login} />;
 
   /* ── Flatten pages into a single list ───────────────────────── */
@@ -101,21 +100,30 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-dvh bg-white">
-      {/* Header */}
+      {/* ── Header ───────────────────────────────────────────────── */}
       <header className="safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-6 h-6 bg-gray-900 rounded-md flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-[11px] font-black tracking-tighter">Y</span>
+          {/* Brand + username */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-sm font-black tracking-tighter">Y</span>
             </div>
-            <span className="text-sm font-medium text-gray-700">{user.name || user.username}</span>
-            {/* Subtle background-refetch indicator */}
+            <span className="text-sm font-medium text-gray-700 truncate">{user.name || user.username}</span>
             {isBackgroundRefetch && (
-              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse" />
+              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse flex-shrink-0" />
             )}
           </div>
 
-          <div className="flex items-center gap-1">
+          {/* Actions */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={handleRefresh}
+              disabled={postsLoading || postsRefetching}
+              title="Refresh"
+              className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 disabled:opacity-40 transition-colors"
+            >
+              <RefreshCw size={15} className={postsRefetching ? "animate-spin" : ""} />
+            </button>
             <button
               onClick={() => router.push("/write")}
               className="flex items-center gap-1.5 pl-4 pr-5 h-11 rounded-full text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 transition-colors"
@@ -134,23 +142,12 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main */}
-      <main className="w-full max-w-[720px] mx-auto px-6 py-10 md:px-8">
-        {/* Title + refresh */}
-        <div className="flex items-center justify-between mb-5">
-          <h1 className="text-xl font-bold text-gray-900">Your articles</h1>
-          <button
-            onClick={handleRefresh}
-            disabled={postsLoading || postsRefetching}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 active:text-gray-700 disabled:opacity-40 transition-colors py-2 px-2 -mr-2"
-          >
-            <RefreshCw size={12} className={postsRefetching ? "animate-spin" : ""} />
-            Refresh
-          </button>
-        </div>
+      {/* ── Main ─────────────────────────────────────────────────── */}
+      <main className="w-full max-w-[720px] mx-auto px-6 py-8 md:px-8">
+        <h1 className="text-xl font-bold text-gray-900 mb-5">Your articles</h1>
 
         {/* Filter tabs */}
-        <div className="flex items-center gap-1 mb-7 border-b border-gray-100">
+        <div className="flex items-center gap-1 mb-6 border-b border-gray-100">
           {(["all", "publish", "draft"] as Filter[]).map((f) => {
             const label = f === "all" ? "All" : f === "publish" ? "Published" : "Drafts";
             const count = counts?.[f] ?? 0;
@@ -159,11 +156,15 @@ export default function Dashboard() {
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`relative flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors ${active ? "text-gray-900" : "text-gray-400 hover:text-gray-600 active:text-gray-600"}`}
+                className={`relative flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors ${
+                  active ? "text-gray-900" : "text-gray-400 hover:text-gray-600 active:text-gray-600"
+                }`}
               >
                 {label}
                 {count > 0 && (
-                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${active ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-400"}`}>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium ${
+                    active ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-400"
+                  }`}>
                     {count}
                   </span>
                 )}
@@ -173,17 +174,17 @@ export default function Dashboard() {
           })}
         </div>
 
-        {/* Initial loading skeleton */}
+        {/* Loading skeleton */}
         {isInitialLoad && (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="animate-pulse flex items-start gap-4 py-4 border-b border-gray-100">
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-100 rounded w-2/3" />
+              <div key={i} className="animate-pulse flex items-start gap-4 py-5">
+                <div className="flex-1 space-y-2.5 pt-0.5">
+                  <div className="h-4 bg-gray-100 rounded w-3/4" />
                   <div className="h-3 bg-gray-100 rounded w-1/2" />
-                  <div className="h-3 bg-gray-100 rounded w-1/4" />
+                  <div className="h-3 bg-gray-100 rounded w-1/3" />
                 </div>
-                <div className="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0" />
+                <div className="w-20 h-20 bg-gray-100 rounded-xl flex-shrink-0" />
               </div>
             ))}
           </div>
@@ -223,57 +224,87 @@ export default function Dashboard() {
               const isEditable =
                 post.status === "draft" ||
                 categoryNames.some((n) => ["Unlisted", "Unreviewed"].includes(n));
+
               return (
                 <li key={post.id}>
-                  <div className="group flex items-start gap-4 py-5 -mx-2 px-2 rounded-xl active:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-4 py-5 -mx-2 px-2 rounded-xl active:bg-gray-50 transition-colors">
+
+                    {/* Left: text content */}
                     <button
                       onClick={() => router.push(`/posts/${post.id}`)}
                       className="flex-1 min-w-0 text-left"
                     >
-                      <p className="text-base font-semibold text-gray-900 group-hover:text-gray-500 transition-colors line-clamp-2">
+                      <p className="text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
                         {title}
                       </p>
                       {excerpt && (
-                        <p className="mt-0.5 text-sm text-gray-400 line-clamp-2">{excerpt}</p>
+                        <p className="mt-1 text-sm text-gray-400 line-clamp-1">{excerpt}</p>
                       )}
-                      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
-                        <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                        {/* Status */}
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                          isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
+                        }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? "bg-green-500" : "bg-gray-400"}`} />
                           {isPublished ? "Published" : "Draft"}
                         </span>
-                        {categories.map((cat) => (
-                          <span key={cat.id} className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-                            {cat.name}
+
+                        {/* First category only */}
+                        {categories[0] && (
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                            {categories[0].name}
                           </span>
-                        ))}
-                        <span className="text-xs text-gray-300">{formatDate(post.modified)}</span>
-                        <span className="flex items-center gap-0.5 text-xs text-gray-300">
+                        )}
+                        {/* Overflow count */}
+                        {categories.length > 1 && (
+                          <span className="text-[11px] text-gray-400 font-medium">
+                            +{categories.length - 1}
+                          </span>
+                        )}
+
+                        {/* Date · Views · Comments */}
+                        <span className="text-xs text-gray-400">{formatDate(post.modified)}</span>
+                        <span className="flex items-center gap-0.5 text-xs text-gray-400">
                           <Eye size={11} />
                           {post.view_count.toLocaleString()}
                         </span>
-                        <span className="flex items-center gap-0.5 text-xs text-gray-300">
+                        <span className="flex items-center gap-0.5 text-xs text-gray-400">
                           <MessageSquare size={11} />
                           {post.total_comments}
                         </span>
                       </div>
                     </button>
-                    <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                      {thumbnail && (
-                        <WpImage
-                          src={thumbnail}
-                          className="w-16 h-16 rounded-lg object-cover"
-                        />
-                      )}
-                      {isEditable && (
+
+                    {/* Right: thumbnail with edit overlay, or edit button alone */}
+                    <div className="flex-shrink-0">
+                      {thumbnail ? (
+                        <div className="relative">
+                          <button onClick={() => router.push(`/posts/${post.id}`)}>
+                            <WpImage
+                              src={thumbnail}
+                              className="w-20 h-20 rounded-xl object-cover"
+                            />
+                          </button>
+                          {isEditable && (
+                            <button
+                              onClick={() => router.push(`/write?id=${post.id}`)}
+                              className="absolute bottom-1.5 right-1.5 w-7 h-7 bg-black/50 backdrop-blur-sm rounded-lg flex items-center justify-center active:bg-black/70 transition-colors"
+                            >
+                              <PenLine size={12} className="text-white" />
+                            </button>
+                          )}
+                        </div>
+                      ) : isEditable ? (
                         <button
                           onClick={() => router.push(`/write?id=${post.id}`)}
-                          className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-gray-700 active:text-gray-700 transition-colors py-2 px-2 -mr-2"
+                          className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-gray-700 active:text-gray-700 transition-colors py-2 px-2 -mr-2 mt-0.5"
                         >
                           <PenLine size={11} />
                           Edit
                         </button>
-                      )}
+                      ) : null}
                     </div>
+
                   </div>
                 </li>
               );
@@ -284,14 +315,12 @@ export default function Dashboard() {
         {/* Sentinel — triggers next page */}
         <div ref={sentinelRef} className="h-1" />
 
-        {/* Loading next page */}
         {isFetchingNextPage && (
           <div className="flex justify-center py-6">
             <Loader2 size={16} className="animate-spin text-gray-300" />
           </div>
         )}
 
-        {/* End of list */}
         {!hasNextPage && allPosts.length > 0 && !isInitialLoad && (
           <p className="text-center text-xs text-gray-200 py-6">All articles loaded</p>
         )}
