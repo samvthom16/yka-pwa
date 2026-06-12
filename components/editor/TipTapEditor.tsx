@@ -74,13 +74,12 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         hideBubble();
         return;
       }
-      const safeTop = parseFloat(
-        getComputedStyle(document.documentElement).paddingTop
-      ) || 60;
+      // Clamp bubble below the sticky header (accounts for notch/safe-area on any device)
+      const headerEl = document.querySelector("header");
+      const minTop = headerEl ? headerEl.getBoundingClientRect().bottom + 8 : 64;
       setBubbleMenu({
         visible: true,
-        // Position centred above the selection; clamp top to below safe-area header
-        top: Math.max(rect.top - 52, safeTop + 8),
+        top: Math.max(rect.top - 52, minTop),
         left: Math.min(
           Math.max(rect.left + rect.width / 2, 160),
           window.innerWidth - 160
