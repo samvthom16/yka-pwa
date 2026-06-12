@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3010",
+    "dev": "next dev --port 5555",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.0",
     "@tiptap/extension-blockquote": "^3.22.4",
     "@tiptap/extension-bold": "^3.22.4",
     "@tiptap/extension-bullet-list": "^3.22.4",

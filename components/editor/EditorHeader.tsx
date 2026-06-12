@@ -1,16 +1,10 @@
 "use client";
 
 import { RefObject, useCallback, useState } from "react";
-import {
-  Focus,
-  Eye,
-  Download,
-  Upload,
-  Check,
-  Loader2,
-  ChevronDown,
-} from "lucide-react";
+import { Focus, Eye, Download, Upload, Check, Loader2, ArrowLeft } from "lucide-react";
 import type { TipTapEditorHandle } from "./TipTapEditor";
+
+export type PublishStatus = "idle" | "publishing" | "success" | "error";
 
 interface EditorHeaderProps {
   title: string;
@@ -19,6 +13,12 @@ interface EditorHeaderProps {
   saveStatus: "saved" | "saving" | "unsaved";
   editorRef: RefObject<TipTapEditorHandle | null>;
   onToggleFocusMode: () => void;
+  publishStatus: PublishStatus;
+  publishError: string;
+  publishedLink: string;
+  onPublish: () => void;
+  onDismissPublish: () => void;
+  onBack: () => void;
 }
 
 /* ── Minimal icon button ──────────────────────────────────────── */
@@ -111,6 +111,64 @@ function PreviewModal({
   );
 }
 
+/* ── Publish result modal ─────────────────────────────────────── */
+function PublishModal({
+  status,
+  error,
+  link,
+  onClose,
+}: {
+  status: PublishStatus;
+  error: string;
+  link: string;
+  onClose: () => void;
+}) {
+  if (status !== "success" && status !== "error") return null;
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
+        {status === "success" ? (
+          <>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <Check size={16} className="text-green-600" />
+              </div>
+              <h2 className="text-base font-semibold text-gray-900">Published!</h2>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">Your article is now live on WordPress.</p>
+            {link && (
+              <a
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 py-2.5 rounded-lg transition-colors mb-3"
+              >
+                View post ↗
+              </a>
+            )}
+            <button onClick={onClose} className="w-full text-sm text-gray-400 hover:text-gray-600 transition-colors">
+              Dismiss
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-red-600 text-sm font-bold">!</span>
+              </div>
+              <h2 className="text-base font-semibold text-gray-900">Publish failed</h2>
+            </div>
+            <p className="text-sm text-gray-500 mb-4 break-words">{error}</p>
+            <button onClick={onClose} className="w-full text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 py-2.5 rounded-lg transition-colors">
+              OK
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Main header ─────────────────────────────────────────────── */
 export default function EditorHeader({
   title,
@@ -119,6 +177,12 @@ export default function EditorHeader({
   saveStatus,
   editorRef,
   onToggleFocusMode,
+  publishStatus,
+  publishError,
+  publishedLink,
+  onPublish,
+  onDismissPublish,
+  onBack,
 }: EditorHeaderProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
@@ -176,12 +240,17 @@ export default function EditorHeader({
           ${focusMode ? "opacity-0 hover:opacity-100" : "opacity-100"}
         `}
       >
-        {/* ── Left: brand + title ────────────────────────────── */}
+        {/* ── Left: back + brand + title ─────────────────────── */}
         <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            onClick={onBack}
+            title="Back to dashboard"
+            className="flex items-center justify-center w-7 h-7 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors flex-shrink-0"
+          >
+            <ArrowLeft size={15} />
+          </button>
           <div className="flex-shrink-0 w-6 h-6 bg-gray-900 rounded-md flex items-center justify-center">
-            <span className="text-white text-[11px] font-black tracking-tighter">
-              Y
-            </span>
+            <span className="text-white text-[11px] font-black tracking-tighter">Y</span>
           </div>
           {title && (
             <span className="text-sm text-gray-400 truncate max-w-[220px] hidden sm:block">
@@ -224,11 +293,18 @@ export default function EditorHeader({
             <Download size={15} />
           </IconBtn>
 
-          {/* Publish button with dropdown affordance */}
-          <button className="flex items-center gap-1 ml-2 pl-4 pr-3 h-8 rounded-full text-[13px] font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 transition-colors">
-            <Upload size={12} />
-            <span>Publish</span>
-            <ChevronDown size={11} className="ml-0.5 opacity-60" />
+          {/* Publish button */}
+          <button
+            onClick={onPublish}
+            disabled={publishStatus === "publishing"}
+            className="flex items-center gap-1 ml-2 pl-4 pr-3 h-8 rounded-full text-[13px] font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {publishStatus === "publishing" ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <Upload size={12} />
+            )}
+            <span>{publishStatus === "publishing" ? "Publishing…" : "Publish"}</span>
           </button>
         </div>
       </header>
@@ -242,6 +318,14 @@ export default function EditorHeader({
           onClose={() => setShowPreview(false)}
         />
       )}
+
+      {/* Publish result modal */}
+      <PublishModal
+        status={publishStatus}
+        error={publishError}
+        link={publishedLink}
+        onClose={onDismissPublish}
+      />
     </>
   );
 }

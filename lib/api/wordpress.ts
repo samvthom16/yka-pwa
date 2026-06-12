@@ -64,7 +64,91 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/* ─── Current user ───────────────────────────────────────────── */
+export async function getMe(cfg: WPConfig): Promise<{ id: number; name: string; slug: string }> {
+  const res = await fetch(apiUrl(cfg, "/users/me"), {
+    headers: { Authorization: authHeader(cfg) },
+  });
+  return handleResponse(res);
+}
+
+/* ─── Types ──────────────────────────────────────────────────── */
+export interface WPPostListItem {
+  id: number;
+  title: { rendered: string };
+  content: { rendered: string };
+  status: "publish" | "draft" | "private" | "pending";
+  date: string;
+  modified: string;
+  link: string;
+  excerpt: { rendered: string };
+}
+
 /* ─── Posts ──────────────────────────────────────────────────── */
+export interface PostsPage {
+  posts: WPPostListItem[];
+  totalPages: number;
+}
+
+export interface PostCounts {
+  all: number;
+  publish: number;
+  draft: number;
+}
+
+export async function getPostCounts(cfg: WPConfig, authorId?: number): Promise<PostCounts> {
+  async function fetchCount(status: string): Promise<number> {
+    const params = new URLSearchParams({ status, per_page: "1" });
+    if (authorId) params.set("author", String(authorId));
+    const res = await fetch(apiUrl(cfg, `/posts?${params}`), {
+      headers: { Authorization: authHeader(cfg) },
+    });
+    if (!res.ok) return 0;
+    return Number(res.headers.get("X-WP-Total") ?? "0");
+  }
+  const [publish, draft] = await Promise.all([
+    fetchCount("publish"),
+    fetchCount("draft"),
+  ]);
+  return { all: publish + draft, publish, draft };
+}
+
+export async function getPost(cfg: WPConfig, id: number): Promise<WPPostListItem> {
+  const res = await fetch(apiUrl(cfg, `/posts/${id}`), {
+    headers: { Authorization: authHeader(cfg) },
+  });
+  return handleResponse<WPPostListItem>(res);
+}
+
+export async function getPosts(
+  cfg: WPConfig,
+  page = 1,
+  perPage = 20,
+  statuses: string[] = ["publish", "draft"],
+  authorId?: number
+): Promise<PostsPage> {
+  const params = new URLSearchParams({
+    status: statuses.join(","),
+    per_page: String(perPage),
+    page: String(page),
+    orderby: "modified",
+    order: "desc",
+  });
+  if (authorId) params.set("author", String(authorId));
+  const res = await fetch(apiUrl(cfg, `/posts?${params}`), {
+    headers: { Authorization: authHeader(cfg) },
+  });
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try { const b = await res.json(); message = b?.message ?? message; } catch { /* */ }
+    throw new Error(message);
+  }
+  const totalPages = Number(res.headers.get("X-WP-TotalPages") ?? "1");
+  const posts = await res.json() as WPPostListItem[];
+  return { posts, totalPages };
+}
+
+
 export async function createPost(
   cfg: WPConfig,
   post: WPPostInput

@@ -1,11 +1,16 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import EditorHeader from "./EditorHeader";
 import StatusBar from "./StatusBar";
 import type { TipTapEditorHandle } from "./TipTapEditor";
 import { useDraft } from "@/hooks/useDraft";
+import { useAuth } from "@/hooks/useAuth";
+import LoginScreen from "@/components/auth/LoginScreen";
+import { createPost } from "@/lib/api/wordpress";
+import type { PublishStatus } from "./EditorHeader";
 
 const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
   ssr: false,
@@ -20,6 +25,8 @@ const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
 });
 
 export default function WritingApp() {
+  const router = useRouter();
+  const { user, isLoading: authLoading, login } = useAuth();
   const editorRef = useRef<TipTapEditorHandle>(null);
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
@@ -32,8 +39,11 @@ export default function WritingApp() {
   const [focusMode, setFocusMode] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [initialContent, setInitialContent] = useState<object | undefined>(undefined);
+  const [publishStatus, setPublishStatus] = useState<PublishStatus>("idle");
+  const [publishError, setPublishError] = useState("");
+  const [publishedLink, setPublishedLink] = useState("");
 
-  const { draft, saveDraft, isLoading } = useDraft("default");
+  const { draft, saveDraft, clearDraft, isLoading } = useDraft("default");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Refs hold latest values so the debounced callback never captures stale state */
@@ -142,6 +152,55 @@ export default function WritingApp() {
     triggerSave();
   }, [triggerSave]);
 
+  /* ── Publish to WordPress ─────────────────────────────────── */
+  const handlePublish = useCallback(async () => {
+    if (!user) return;
+
+    const html = editorRef.current?.getHTML() ?? "";
+    const plainText = html.replace(/<[^>]*>/g, "").trim();
+
+    if (!title.trim()) {
+      setPublishError("Please add a title before publishing.");
+      setPublishStatus("error");
+      return;
+    }
+    if (!plainText) {
+      setPublishError("The article has no content. Write something before publishing.");
+      setPublishStatus("error");
+      return;
+    }
+
+    setPublishStatus("publishing");
+    setPublishError("");
+    setPublishedLink("");
+
+    try {
+      const result = await createPost(
+        { siteUrl: "https://ykasandbox.com", username: user.username, appPassword: user.password },
+        { title: title.trim(), content: html, status: "publish" }
+      );
+      setPublishedLink(result.link ?? "");
+      setPublishStatus("success");
+      await clearDraft();
+      setTimeout(() => router.push("/"), 1800);
+    } catch (err) {
+      setPublishError(err instanceof Error ? err.message : "Publish failed. Try again.");
+      setPublishStatus("error");
+    }
+  }, [user, title, editorRef, clearDraft]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={login} />;
+  }
+
   return (
     <div
       className={`flex flex-col min-h-screen bg-white transition-all duration-300 ${
@@ -155,6 +214,12 @@ export default function WritingApp() {
         saveStatus={saveStatus}
         editorRef={editorRef}
         onToggleFocusMode={() => setFocusMode((f) => !f)}
+        publishStatus={publishStatus}
+        publishError={publishError}
+        publishedLink={publishedLink}
+        onPublish={handlePublish}
+        onDismissPublish={() => setPublishStatus("idle")}
+        onBack={() => router.push("/")}
       />
 
       <main className="flex-1 w-full max-w-[720px] mx-auto px-6 pb-20 pt-12 md:px-8">
