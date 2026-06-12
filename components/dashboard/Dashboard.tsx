@@ -19,6 +19,34 @@ function wpConfig(user: { username: string; password: string }) {
   return { siteUrl: SITE_URL, username: user.username, appPassword: user.password };
 }
 
+function wpAuthHeader(user: { username: string; password: string }): string {
+  return `Basic ${btoa(`${user.username}:${user.password.replace(/\s/g, "")}`)}`;
+}
+
+function WpImage({ src, auth, className }: { src: string; auth: string; className?: string }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let revoked = false;
+    fetch(`/api/media?url=${encodeURIComponent(src)}`, {
+      headers: { "x-wp-auth": auth },
+    })
+      .then((r) => r.blob())
+      .then((blob) => {
+        if (!revoked) setObjectUrl(URL.createObjectURL(blob));
+      })
+      .catch(() => {});
+    return () => {
+      revoked = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, auth]);
+
+  if (!objectUrl) return <div className={className + " bg-gray-100"} />;
+  return <img src={objectUrl} alt="" className={className} />;
+}
+
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
     year: "numeric", month: "short", day: "numeric",
@@ -36,6 +64,7 @@ export default function Dashboard() {
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const cfg = user ? wpConfig(user) : null;
+  const auth = user ? wpAuthHeader(user) : "";
 
   /* ── Resolve WP author ID ────────────────────────────────────── */
   const { data: me } = useQuery({
@@ -268,10 +297,10 @@ export default function Dashboard() {
                     </button>
                     <div className="flex-shrink-0 flex flex-col items-end gap-2">
                       {thumbnail && (
-                        <img
+                        <WpImage
                           src={thumbnail}
-                          alt=""
-                          className="w-16 h-16 rounded-lg object-cover bg-gray-100"
+                          auth={auth}
+                          className="w-16 h-16 rounded-lg object-cover"
                         />
                       )}
                       {isEditable && (
