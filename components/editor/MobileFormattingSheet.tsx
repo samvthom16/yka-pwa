@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Editor } from "@tiptap/react";
 import {
   Bold, Italic, Underline, Strikethrough, Code,
@@ -57,22 +57,6 @@ export default function MobileFormattingSheet({ editor, isFocused }: Props) {
   const { linkMode, linkInput, setLinkInput, openLink, applyLink, cancelLink } =
     useLinkEditor(editor, { focus: false });
 
-  /* Track keyboard height so toolbar sits exactly above the keyboard */
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      setKeyboardHeight(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
-    };
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
-    };
-  }, []);
-
   /* Reset link state when toolbar hides */
   const visible = isFocused || linkMode;
   useEffect(() => {
@@ -90,11 +74,10 @@ export default function MobileFormattingSheet({ editor, isFocused }: Props) {
 
   return (
     <div
-      className="fixed left-0 right-0 z-[150] bg-white border-t border-gray-100 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
+      className="fixed left-0 right-0 z-[150] bg-white border-b border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
       style={{
-        /* Instant bottom update — no CSS transition — so bar tracks keyboard without lag */
-        bottom: keyboardHeight,
-        paddingBottom: keyboardHeight > 0 ? 0 : "env(safe-area-inset-bottom, 0px)",
+        /* Sit flush below the sticky header (safe-area-inset-top + h-14 = 3.5rem) */
+        top: "calc(env(safe-area-inset-top, 0px) + 3.5rem)",
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? "auto" : "none",
         transition: "opacity 0.12s ease",
