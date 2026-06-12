@@ -186,7 +186,7 @@ export default function PostPage() {
         <div className="ProseMirror" dangerouslySetInnerHTML={{ __html: safeContent }} />
 
         {/* Comments */}
-        <section className="mt-16 border-t border-gray-100 pt-10">
+        <section className="mt-8 border-t border-gray-100 pt-8">
           <h2 className="text-base font-semibold text-gray-900 mb-6">
             {comments.length === 0
               ? "No comments yet"
