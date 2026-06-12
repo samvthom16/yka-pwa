@@ -4,7 +4,6 @@ interface StatusBarProps {
   wordCount: number;
   charCount: number;
   saveStatus: "saved" | "saving" | "unsaved";
-  focusMode: boolean;
 }
 
 function plural(n: number, word: string) {
@@ -15,18 +14,12 @@ export default function StatusBar({
   wordCount,
   charCount,
   saveStatus,
-  focusMode,
 }: StatusBarProps) {
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
   return (
     <footer
-      className={`
-        fixed bottom-0 left-0 right-0 z-40
-        bg-white/80 backdrop-blur-sm border-t border-gray-100
-        text-[11px] text-gray-400 transition-opacity duration-400
-        ${focusMode ? "opacity-0 hover:opacity-100" : "opacity-100"}
-      `}
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-sm border-t border-gray-100 text-[11px] text-gray-400"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <div className="flex items-center justify-center gap-4 h-9 px-6">

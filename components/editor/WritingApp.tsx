@@ -70,8 +70,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
-  const [focusMode, setFocusMode] = useState(false);
-  const [draftLoaded, setDraftLoaded] = useState(false);
+const [draftLoaded, setDraftLoaded] = useState(false);
   const [initialContent, setInitialContent] = useState<object | string | undefined>(undefined);
   const [publishStatus, setPublishStatus] = useState<PublishStatus>("idle");
   const [publishError, setPublishError] = useState("");
@@ -278,17 +277,14 @@ export default function WritingApp({ postId }: { postId?: number }) {
 
   return (
     <div
-      className={`flex flex-col min-h-dvh bg-white transition-all duration-300 ${
-        focusMode ? "editor-focus-mode" : ""
-      }`}
+      className="flex flex-col min-h-dvh bg-white"
     >
       <EditorHeader
         title={title}
         thumbnail={thumbnail}
-        focusMode={focusMode}
+        isEditMode={isEditMode}
         saveStatus={saveStatus}
         editorRef={editorRef}
-        onToggleFocusMode={() => setFocusMode((f) => !f)}
         publishStatus={publishStatus}
         publishError={publishError}
         onPublish={handlePublish}
@@ -315,7 +311,6 @@ export default function WritingApp({ postId }: { postId?: number }) {
             outline-none border-none bg-transparent
             mb-10 resize-none overflow-hidden font-sans block
             transition-opacity duration-300
-            ${focusMode ? "opacity-60 focus:opacity-100" : ""}
           `}
           style={{
             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -323,7 +318,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
         />
 
         {/* Post thumbnail — optional cover image */}
-        <div className={`mb-10 transition-opacity duration-300 ${focusMode ? "opacity-40 hover:opacity-100" : ""}`}>
+        <div className="mb-10">
           {thumbnail ? (
             <div className="relative group rounded-lg overflow-hidden">
               {thumbnail.startsWith("data:") ? (
@@ -385,7 +380,6 @@ export default function WritingApp({ postId }: { postId?: number }) {
         wordCount={wordCount}
         charCount={charCount}
         saveStatus={saveStatus}
-        focusMode={focusMode}
       />
     </div>
   );

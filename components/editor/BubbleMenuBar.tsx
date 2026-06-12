@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import { Editor } from "@tiptap/react";
 import {
   Bold,
@@ -10,6 +9,7 @@ import {
   Link2Off,
   Quote,
 } from "lucide-react";
+import { useLinkEditor } from "./useLinkEditor";
 
 interface BubbleMenuBarProps {
   editor: Editor;
@@ -55,25 +55,8 @@ function Sep() {
 
 /* ─── Main component ────────────────────────────────────────── */
 export default function BubbleMenuBar({ editor, onClose: _onClose }: BubbleMenuBarProps) {
-  const [linkMode, setLinkMode] = useState(false);
-  const [linkInput, setLinkInput] = useState(
-    editor.getAttributes("link").href ?? ""
-  );
-
-  const applyLink = useCallback(() => {
-    const url = linkInput.trim();
-    if (!url) {
-      editor.chain().focus().unsetLink().run();
-    } else {
-      editor
-        .chain()
-        .focus()
-        .setLink({ href: url.startsWith("http") ? url : `https://${url}` })
-        .run();
-    }
-    setLinkMode(false);
-    setLinkInput("");
-  }, [editor, linkInput]);
+  const { linkMode, linkInput, setLinkInput, openLink, applyLink, cancelLink } =
+    useLinkEditor(editor, { focus: true });
 
   /* Link input mode */
   if (linkMode) {
@@ -86,7 +69,7 @@ export default function BubbleMenuBar({ editor, onClose: _onClose }: BubbleMenuB
           onChange={(e) => setLinkInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") applyLink();
-            if (e.key === "Escape") setLinkMode(false);
+            if (e.key === "Escape") cancelLink();
           }}
           placeholder="Paste URL…"
           className="bg-transparent text-white text-base outline-none w-52 placeholder:text-gray-600"
@@ -103,7 +86,7 @@ export default function BubbleMenuBar({ editor, onClose: _onClose }: BubbleMenuB
         <button
           onPointerDown={(e) => {
             e.preventDefault();
-            setLinkMode(false);
+            cancelLink();
           }}
           className="text-gray-500 hover:text-gray-300 active:text-gray-200 text-xs px-2 py-2 flex-shrink-0"
         >
@@ -186,10 +169,7 @@ export default function BubbleMenuBar({ editor, onClose: _onClose }: BubbleMenuB
         </ToolBtn>
       ) : (
         <ToolBtn
-          onClick={() => {
-            setLinkInput(editor.getAttributes("link").href ?? "");
-            setLinkMode(true);
-          }}
+          onClick={openLink}
           title="Add link"
         >
           <Link2 size={13} />
