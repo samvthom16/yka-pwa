@@ -24,6 +24,34 @@ const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
   ),
 });
 
+function dataUrlToFile(dataUrl: string, index: number): File {
+  const [header, base64] = dataUrl.split(",");
+  const mime = header.match(/:(.*?);/)?.[1] ?? "image/png";
+  const ext = mime.split("/")[1] ?? "png";
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  return new File([arr], `image-${index + 1}.${ext}`, { type: mime });
+}
+
+async function uploadContentImages(
+  html: string,
+  cfg: Parameters<typeof uploadMedia>[0]
+): Promise<string> {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+  const imgs = Array.from(doc.querySelectorAll("img[src^='data:']"));
+  await Promise.all(
+    imgs.map(async (img, i) => {
+      const src = img.getAttribute("src")!;
+      const file = dataUrlToFile(src, i);
+      const media = await uploadMedia(cfg, file, img.getAttribute("alt") ?? undefined);
+      img.setAttribute("src", media.source_url);
+    })
+  );
+  return doc.body.innerHTML;
+}
+
 export default function WritingApp({ postId }: { postId?: number }) {
   const router = useRouter();
   const { user, isLoading: authLoading, login } = useAuth();
@@ -211,11 +239,14 @@ export default function WritingApp({ postId }: { postId?: number }) {
         featuredMediaId = media.id;
       }
 
+      /* Upload any data-URL images embedded in the content and replace with WP URLs */
+      const uploadedHtml = await uploadContentImages(html, cfg);
+
       let link: string;
       if (isEditMode) {
         const result = await updatePost(cfg, postId!, {
           title: title.trim(),
-          content: html,
+          content: uploadedHtml,
           status: "publish",
           ...(featuredMediaId !== undefined && { featured_media: featuredMediaId }),
         });
@@ -223,7 +254,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
       } else {
         const result = await createPost(cfg, {
           title: title.trim(),
-          content: html,
+          content: uploadedHtml,
           status: "publish",
           ...(featuredMediaId !== undefined && { featured_media: featuredMediaId }),
         });
