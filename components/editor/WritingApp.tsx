@@ -71,7 +71,6 @@ export default function WritingApp({ postId }: { postId?: number }) {
   const [initialContent, setInitialContent] = useState<object | string | undefined>(undefined);
   const [publishStatus, setPublishStatus] = useState<PublishStatus>("idle");
   const [publishError, setPublishError] = useState("");
-  const [publishedLink, setPublishedLink] = useState("");
 
   const { draft, saveDraft, clearDraft, isLoading } = useDraft("default");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -227,7 +226,6 @@ export default function WritingApp({ postId }: { postId?: number }) {
 
     setPublishStatus("publishing");
     setPublishError("");
-    setPublishedLink("");
 
     const cfg = { siteUrl: "https://ykasandbox.com", username: user.username, appPassword: user.password };
 
@@ -242,26 +240,22 @@ export default function WritingApp({ postId }: { postId?: number }) {
       /* Upload any data-URL images embedded in the content and replace with WP URLs */
       const uploadedHtml = await uploadContentImages(html, cfg);
 
-      let link: string;
       if (isEditMode) {
-        const result = await updatePost(cfg, postId!, {
+        await updatePost(cfg, postId!, {
           title: title.trim(),
           content: uploadedHtml,
           status: "publish",
           ...(featuredMediaId !== undefined && { featured_media: featuredMediaId }),
         });
-        link = result.link ?? "";
       } else {
-        const result = await createPost(cfg, {
+        await createPost(cfg, {
           title: title.trim(),
           content: uploadedHtml,
           status: "publish",
           ...(featuredMediaId !== undefined && { featured_media: featuredMediaId }),
         });
-        link = result.link ?? "";
         await clearDraft();
       }
-      setPublishedLink(link);
       setPublishStatus("success");
       setTimeout(() => router.push("/"), 1800);
     } catch (err) {
@@ -297,7 +291,6 @@ export default function WritingApp({ postId }: { postId?: number }) {
         onToggleFocusMode={() => setFocusMode((f) => !f)}
         publishStatus={publishStatus}
         publishError={publishError}
-        publishedLink={publishedLink}
         onPublish={handlePublish}
         onDismissPublish={() => setPublishStatus("idle")}
         onBack={() => router.push("/")}

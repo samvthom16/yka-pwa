@@ -15,7 +15,6 @@ interface EditorHeaderProps {
   onToggleFocusMode: () => void;
   publishStatus: PublishStatus;
   publishError: string;
-  publishedLink: string;
   onPublish: () => void;
   onDismissPublish: () => void;
   onBack: () => void;
@@ -115,55 +114,26 @@ function PreviewModal({
 function PublishModal({
   status,
   error,
-  link,
   onClose,
 }: {
   status: PublishStatus;
   error: string;
-  link: string;
   onClose: () => void;
 }) {
-  if (status !== "success" && status !== "error") return null;
+  if (status !== "error") return null;
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
-        {status === "success" ? (
-          <>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                <Check size={16} className="text-green-600" />
-              </div>
-              <h2 className="text-base font-semibold text-gray-900">Published!</h2>
-            </div>
-            <p className="text-sm text-gray-500 mb-4">Your article is now live on WordPress.</p>
-            {link && (
-              <a
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-center text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 py-2.5 rounded-lg transition-colors mb-3"
-              >
-                View post ↗
-              </a>
-            )}
-            <button onClick={onClose} className="w-full text-sm text-gray-400 hover:text-gray-600 transition-colors">
-              Dismiss
-            </button>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <span className="text-red-600 text-sm font-bold">!</span>
-              </div>
-              <h2 className="text-base font-semibold text-gray-900">Publish failed</h2>
-            </div>
-            <p className="text-sm text-gray-500 mb-4 break-words">{error}</p>
-            <button onClick={onClose} className="w-full text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 py-2.5 rounded-lg transition-colors">
-              OK
-            </button>
-          </>
-        )}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+            <span className="text-red-600 text-sm font-bold">!</span>
+          </div>
+          <h2 className="text-base font-semibold text-gray-900">Publish failed</h2>
+        </div>
+        <p className="text-sm text-gray-500 mb-4 break-words">{error}</p>
+        <button onClick={onClose} className="w-full text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 py-2.5 rounded-lg transition-colors">
+          OK
+        </button>
       </div>
     </div>
   );
@@ -179,7 +149,6 @@ export default function EditorHeader({
   onToggleFocusMode,
   publishStatus,
   publishError,
-  publishedLink,
   onPublish,
   onDismissPublish,
   onBack,
@@ -323,7 +292,6 @@ export default function EditorHeader({
       <PublishModal
         status={publishStatus}
         error={publishError}
-        link={publishedLink}
         onClose={onDismissPublish}
       />
     </>
