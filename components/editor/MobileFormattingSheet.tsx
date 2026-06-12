@@ -1,8 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Editor } from "@tiptap/react";
-import { Bold, Italic, Underline, Link2, Link2Off, Quote } from "lucide-react";
+import {
+  Bold, Italic, Underline, Strikethrough, Code,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify,
+  List, ListOrdered, Quote, Terminal, Minus,
+  Image, Link2, Link2Off,
+} from "lucide-react";
 import { useLinkEditor } from "./useLinkEditor";
 
 interface Props {
@@ -10,7 +15,7 @@ interface Props {
   isFocused: boolean;
 }
 
-/* ── Button ─────────────────────────────────────────────────── */
+/* ── Formatting button ──────────────────────────────────────── */
 function Btn({
   active,
   onPointerDown,
@@ -26,7 +31,7 @@ function Btn({
     <button
       title={title}
       onPointerDown={onPointerDown}
-      className={`flex items-center justify-center w-12 h-12 rounded-xl flex-shrink-0 transition-colors ${
+      className={`flex items-center justify-center w-11 h-11 rounded-xl flex-shrink-0 transition-colors ${
         active ? "bg-gray-900 text-white" : "text-gray-600 active:bg-gray-100"
       }`}
     >
@@ -36,10 +41,10 @@ function Btn({
 }
 
 function Sep() {
-  return <div className="w-px h-6 bg-gray-100 mx-1 flex-shrink-0 self-center" />;
+  return <div className="w-px h-5 bg-gray-100 mx-0.5 flex-shrink-0 self-center" />;
 }
 
-/* Prevent blur on the editor when pressing a toolbar button */
+/* Keep editor focused when pressing toolbar buttons */
 const pd =
   (fn: () => void) =>
   (e: React.PointerEvent) => {
@@ -52,7 +57,7 @@ export default function MobileFormattingSheet({ editor, isFocused }: Props) {
   const { linkMode, linkInput, setLinkInput, openLink, applyLink, cancelLink } =
     useLinkEditor(editor, { focus: false });
 
-  /* Track keyboard height via visualViewport so we sit exactly above the keyboard */
+  /* Track keyboard height so toolbar sits exactly above the keyboard */
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   useEffect(() => {
     const vv = window.visualViewport;
@@ -74,15 +79,22 @@ export default function MobileFormattingSheet({ editor, isFocused }: Props) {
     if (!visible) cancelLink();
   }, [visible, cancelLink]);
 
+  /* Handle image file → insert as figure with data URL */
+  function handleImageFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      editor.chain().focus().setFigureImage({ src: ev.target?.result as string, alt: file.name }).run();
+    };
+    reader.readAsDataURL(file);
+  }
+
   return (
     <div
       className="fixed left-0 right-0 z-[150] bg-white border-t border-gray-100 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]"
       style={{
-        /* Position flush with the top of the keyboard; instant update — no CSS transition
-           on bottom so the bar tracks the keyboard without lag or scroll jitter */
+        /* Instant bottom update — no CSS transition — so bar tracks keyboard without lag */
         bottom: keyboardHeight,
         paddingBottom: keyboardHeight > 0 ? 0 : "env(safe-area-inset-bottom, 0px)",
-        /* Fade in/out only — no slide, which would fight the keyboard animation */
         opacity: visible ? 1 : 0,
         pointerEvents: visible ? "auto" : "none",
         transition: "opacity 0.12s ease",
@@ -118,82 +130,130 @@ export default function MobileFormattingSheet({ editor, isFocused }: Props) {
           </button>
         </div>
       ) : (
-        /* ── Formatting toolbar ──────────────────────────────── */
-        <div className="flex items-center gap-0.5 px-2 py-1 overflow-x-auto">
-          <Btn
-            active={editor.isActive("heading", { level: 1 })}
-            title="Heading 1"
-            onPointerDown={pd(() => editor.chain().toggleHeading({ level: 1 }).run())}
-          >
-            <span className="text-sm font-bold">H1</span>
+        /* ── Formatting toolbar (scrollable) ─────────────────── */
+        <div className="flex items-center gap-0 px-1.5 py-1 overflow-x-auto scrollbar-none">
+
+          {/* Headings */}
+          <Btn active={editor.isActive("heading", { level: 1 })} title="Heading 1"
+            onPointerDown={pd(() => editor.chain().toggleHeading({ level: 1 }).run())}>
+            <span className="text-[13px] font-bold">H1</span>
           </Btn>
-          <Btn
-            active={editor.isActive("heading", { level: 2 })}
-            title="Heading 2"
-            onPointerDown={pd(() => editor.chain().toggleHeading({ level: 2 }).run())}
-          >
-            <span className="text-sm font-bold">H2</span>
+          <Btn active={editor.isActive("heading", { level: 2 })} title="Heading 2"
+            onPointerDown={pd(() => editor.chain().toggleHeading({ level: 2 }).run())}>
+            <span className="text-[13px] font-bold">H2</span>
           </Btn>
-          <Btn
-            active={editor.isActive("heading", { level: 3 })}
-            title="Heading 3"
-            onPointerDown={pd(() => editor.chain().toggleHeading({ level: 3 }).run())}
-          >
-            <span className="text-sm font-bold">H3</span>
+          <Btn active={editor.isActive("heading", { level: 3 })} title="Heading 3"
+            onPointerDown={pd(() => editor.chain().toggleHeading({ level: 3 }).run())}>
+            <span className="text-[13px] font-bold">H3</span>
           </Btn>
 
           <Sep />
 
-          <Btn
-            active={editor.isActive("bold")}
-            title="Bold"
-            onPointerDown={pd(() => editor.chain().toggleBold().run())}
-          >
-            <Bold size={17} />
+          {/* Inline formatting */}
+          <Btn active={editor.isActive("bold")} title="Bold"
+            onPointerDown={pd(() => editor.chain().toggleBold().run())}>
+            <Bold size={16} />
           </Btn>
-          <Btn
-            active={editor.isActive("italic")}
-            title="Italic"
-            onPointerDown={pd(() => editor.chain().toggleItalic().run())}
-          >
-            <Italic size={17} />
+          <Btn active={editor.isActive("italic")} title="Italic"
+            onPointerDown={pd(() => editor.chain().toggleItalic().run())}>
+            <Italic size={16} />
           </Btn>
-          <Btn
-            active={editor.isActive("underline")}
-            title="Underline"
-            onPointerDown={pd(() => editor.chain().toggleUnderline().run())}
-          >
-            <Underline size={17} />
+          <Btn active={editor.isActive("underline")} title="Underline"
+            onPointerDown={pd(() => editor.chain().toggleUnderline().run())}>
+            <Underline size={16} />
+          </Btn>
+          <Btn active={editor.isActive("strike")} title="Strikethrough"
+            onPointerDown={pd(() => editor.chain().toggleStrike().run())}>
+            <Strikethrough size={16} />
+          </Btn>
+          <Btn active={editor.isActive("code")} title="Inline code"
+            onPointerDown={pd(() => editor.chain().toggleCode().run())}>
+            <Code size={16} />
           </Btn>
 
           <Sep />
 
-          <Btn
-            active={editor.isActive("blockquote")}
-            title="Blockquote"
-            onPointerDown={pd(() => editor.chain().toggleBlockquote().run())}
-          >
-            <Quote size={17} />
+          {/* Alignment */}
+          <Btn active={editor.isActive({ textAlign: "left" })} title="Align left"
+            onPointerDown={pd(() => editor.chain().setTextAlign("left").run())}>
+            <AlignLeft size={16} />
+          </Btn>
+          <Btn active={editor.isActive({ textAlign: "center" })} title="Align center"
+            onPointerDown={pd(() => editor.chain().setTextAlign("center").run())}>
+            <AlignCenter size={16} />
+          </Btn>
+          <Btn active={editor.isActive({ textAlign: "right" })} title="Align right"
+            onPointerDown={pd(() => editor.chain().setTextAlign("right").run())}>
+            <AlignRight size={16} />
+          </Btn>
+          <Btn active={editor.isActive({ textAlign: "justify" })} title="Justify"
+            onPointerDown={pd(() => editor.chain().setTextAlign("justify").run())}>
+            <AlignJustify size={16} />
           </Btn>
 
+          <Sep />
+
+          {/* Block types */}
+          <Btn active={editor.isActive("bulletList")} title="Bullet list"
+            onPointerDown={pd(() => editor.chain().toggleBulletList().run())}>
+            <List size={16} />
+          </Btn>
+          <Btn active={editor.isActive("orderedList")} title="Ordered list"
+            onPointerDown={pd(() => editor.chain().toggleOrderedList().run())}>
+            <ListOrdered size={16} />
+          </Btn>
+          <Btn active={editor.isActive("blockquote")} title="Blockquote"
+            onPointerDown={pd(() => editor.chain().toggleBlockquote().run())}>
+            <Quote size={16} />
+          </Btn>
+          <Btn active={editor.isActive("codeBlock")} title="Code block"
+            onPointerDown={pd(() => editor.chain().toggleCodeBlock().run())}>
+            <Terminal size={16} />
+          </Btn>
+
+          <Sep />
+
+          {/* Insert */}
+          <Btn title="Divider" onPointerDown={pd(() => editor.chain().setHorizontalRule().run())}>
+            <Minus size={16} />
+          </Btn>
+
+          {/* Image — label wraps input directly; most reliable file-picker trigger on iOS */}
+          <label
+            title="Insert image"
+            className="flex items-center justify-center w-11 h-11 rounded-xl flex-shrink-0 text-gray-600 active:bg-gray-100 transition-colors cursor-pointer"
+          >
+            <Image size={16} />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImageFile(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
+
+          {/* Link */}
           {editor.isActive("link") ? (
-            <Btn
-              active
-              title="Remove link"
-              onPointerDown={pd(() => editor.chain().unsetLink().run())}
-            >
-              <Link2Off size={17} />
+            <Btn active title="Remove link"
+              onPointerDown={pd(() => editor.chain().unsetLink().run())}>
+              <Link2Off size={16} />
             </Btn>
           ) : (
-            <Btn
-              title="Add link"
-              onPointerDown={(e) => { e.preventDefault(); openLink(); }}
-            >
-              <Link2 size={17} />
+            <Btn title="Add link"
+              onPointerDown={(e) => { e.preventDefault(); openLink(); }}>
+              <Link2 size={16} />
             </Btn>
           )}
+
+          {/* Right padding spacer */}
+          <div className="w-2 flex-shrink-0" />
         </div>
       )}
+
     </div>
   );
 }
