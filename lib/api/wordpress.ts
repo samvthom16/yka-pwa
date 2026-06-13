@@ -244,6 +244,14 @@ export async function updatePost(
   return handleResponse<WPPostResponse>(res);
 }
 
+export async function deletePost(cfg: WPConfig, postId: number): Promise<void> {
+  const res = await fetch(apiUrl(cfg, `/posts/${postId}?force=true`), {
+    method: "DELETE",
+    headers: { Authorization: authHeader(cfg) },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}
+
 /* ─── Media ──────────────────────────────────────────────────── */
 export async function uploadMedia(
   cfg: WPConfig,
