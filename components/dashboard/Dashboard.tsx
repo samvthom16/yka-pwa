@@ -442,18 +442,13 @@ export default function Dashboard() {
             </div>
 
             <div className="px-3 pt-1 pb-2">
-              {cfg && (
-                <a
-                  href={`${cfg.siteUrl}/wp-admin/profile.php`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setShowUserMenu(false)}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
-                >
-                  <User size={18} className="text-gray-500" />
-                  Edit profile
-                </a>
-              )}
+              <button
+                onClick={() => { router.push("/profile"); setShowUserMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+              >
+                <User size={18} className="text-gray-500" />
+                Edit profile
+              </button>
               <button
                 onClick={() => { logout(); setShowUserMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"

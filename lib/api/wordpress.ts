@@ -75,6 +75,34 @@ export async function getMe(cfg: WPConfig): Promise<{ id: number; name: string; 
   return handleResponse(res);
 }
 
+export interface WPUserProfile {
+  id: number;
+  name: string;
+  slug: string;
+  first_name: string;
+  last_name: string;
+  description: string;
+}
+
+export async function getMyProfile(cfg: WPConfig): Promise<WPUserProfile> {
+  const res = await fetch(apiUrl(cfg, "/users/me?context=edit"), {
+    headers: { Authorization: authHeader(cfg) },
+  });
+  return handleResponse<WPUserProfile>(res);
+}
+
+export async function updateMyProfile(
+  cfg: WPConfig,
+  patch: { first_name?: string; last_name?: string; description?: string }
+): Promise<WPUserProfile> {
+  const res = await fetch(apiUrl(cfg, "/users/me"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: authHeader(cfg) },
+    body: JSON.stringify(patch),
+  });
+  return handleResponse<WPUserProfile>(res);
+}
+
 /* ─── Types ──────────────────────────────────────────────────── */
 export interface WPPostListItem {
   id: number;
