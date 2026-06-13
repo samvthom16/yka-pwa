@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import EditorHeader from "./EditorHeader";
 import StatusBar from "./StatusBar";
@@ -57,6 +58,7 @@ async function uploadContentImages(
 
 export default function WritingApp({ postId }: { postId?: number }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, isLoading: authLoading, login } = useAuth();
   const cfg = useWpConfig(user);
   const editorRef = useRef<TipTapEditorHandle>(null);
@@ -241,6 +243,9 @@ const [draftLoaded, setDraftLoaded] = useState(false);
       if (thumbnailFileRef.current) {
         const media = await uploadMedia(cfg, thumbnailFileRef.current);
         featuredMediaId = media.id;
+      } else if (isEditMode && thumbnail === null) {
+        /* User explicitly removed the cover image — send 0 to clear it in WordPress */
+        featuredMediaId = 0;
       }
 
       /* Upload any data-URL images embedded in the content and replace with WP URLs */
@@ -262,13 +267,18 @@ const [draftLoaded, setDraftLoaded] = useState(false);
         });
         await clearDraft();
       }
+
+      /* Invalidate dashboard query cache so the list refreshes on redirect */
+      await queryClient.invalidateQueries({ queryKey: ["posts"] });
+      await queryClient.invalidateQueries({ queryKey: ["post-counts"] });
+
       setPublishStatus("success");
       redirectTimerRef.current = setTimeout(() => router.push("/"), 1800);
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Publish failed. Try again.");
       setPublishStatus("error");
     }
-  }, [user, cfg, title, editorRef, clearDraft, isEditMode, postId]);
+  }, [user, cfg, title, thumbnail, editorRef, clearDraft, isEditMode, postId, queryClient]);
 
   if (authLoading) return <LoadingScreen />;
 
