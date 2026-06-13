@@ -214,7 +214,6 @@ export default function Dashboard() {
           <ul className="divide-y divide-gray-100">
             {filtered.map((post) => {
               const title = stripHtml(post.title.rendered) || "Untitled";
-              const excerpt = stripHtml(post.excerpt.rendered);
               const isPublished = post.status === "publish";
               const thumbnail = post.featured_image || null;
               const categories = post._embedded?.["wp:term"]
@@ -234,45 +233,45 @@ export default function Dashboard() {
                       onClick={() => router.push(`/posts/${post.id}`)}
                       className="flex-1 min-w-0 text-left"
                     >
-                      <p className="text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
-                        {title}
-                      </p>
-                      {excerpt && (
-                        <p className="mt-1 text-sm text-gray-400 line-clamp-1">{excerpt}</p>
-                      )}
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        {/* Status */}
-                        <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
+                      {/* Title + status pill inline */}
+                      <div className="flex items-start gap-2">
+                        <p className="flex-1 text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
+                          {title}
+                        </p>
+                        <span className={`flex-shrink-0 mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
                           isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
                         }`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? "bg-green-500" : "bg-gray-400"}`} />
                           {isPublished ? "Published" : "Draft"}
                         </span>
+                      </div>
 
-                        {/* First category only */}
-                        {categories[0] && (
-                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-                            {categories[0].name}
-                          </span>
-                        )}
-                        {/* Overflow count */}
-                        {categories.length > 1 && (
-                          <span className="text-[11px] text-gray-400 font-medium">
-                            +{categories.length - 1}
-                          </span>
-                        )}
-
-                        {/* Date · Views · Comments */}
-                        <span className="text-xs text-gray-400">{formatDate(post.modified)}</span>
-                        <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                      {/* Date + stats (replaces excerpt) */}
+                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+                        <span>{formatDate(post.modified)}</span>
+                        <span className="flex items-center gap-0.5">
                           <Eye size={11} />
                           {post.view_count.toLocaleString()}
                         </span>
-                        <span className="flex items-center gap-0.5 text-xs text-gray-400">
+                        <span className="flex items-center gap-0.5">
                           <MessageSquare size={11} />
                           {post.total_comments}
                         </span>
                       </div>
+
+                      {/* Category badges */}
+                      {categories.length > 0 && (
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                            {categories[0].name}
+                          </span>
+                          {categories.length > 1 && (
+                            <span className="text-[11px] text-gray-400 font-medium">
+                              +{categories.length - 1}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </button>
 
                     {/* Right: thumbnail with edit overlay, or edit button alone */}
