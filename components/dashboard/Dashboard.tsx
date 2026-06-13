@@ -11,7 +11,7 @@ import { getPosts, getPostCounts, getMe, deletePost } from "@/lib/api/wordpress"
 import type { WPPostListItem } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import WpImage from "@/components/ui/WpImage";
-import { Loader2, PenLine, RefreshCw, LogOut, Eye, MessageSquare, MoreVertical, Trash2 } from "lucide-react";
+import { Loader2, PenLine, RefreshCw, LogOut, Eye, MessageSquare, MoreVertical, Trash2, User } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PER_PAGE = 20;
@@ -28,6 +28,15 @@ export default function Dashboard() {
   const [activeMenu, setActiveMenu] = useState<WPPostListItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  /* Derive 2-letter monogram from display name or username */
+  const monogram = (() => {
+    const name = (user?.name || user?.username || "").trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase() || "?";
+  })();
 
   /* ── Resolve WP author ID ────────────────────────────────────── */
   const { data: me } = useQuery({
@@ -135,40 +144,39 @@ export default function Dashboard() {
       {/* ── Header ───────────────────────────────────────────────── */}
       <header className="safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
-          {/* Brand + username */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          {/* Brand */}
+          <div className="flex items-center gap-2 min-w-0">
             <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center flex-shrink-0">
               <span className="text-white text-sm font-black tracking-tighter">Y</span>
             </div>
-            <span className="text-sm font-medium text-gray-700 truncate">{user.name || user.username}</span>
             {isBackgroundRefetch && (
               <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse flex-shrink-0" />
             )}
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={handleRefresh}
               disabled={postsLoading || postsRefetching}
               title="Refresh"
-              className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 disabled:opacity-40 transition-colors"
+              className="flex items-center justify-center w-9 h-9 rounded-lg text-gray-400 active:bg-gray-100 active:text-gray-700 disabled:opacity-40 transition-colors"
             >
               <RefreshCw size={15} className={postsRefetching ? "animate-spin" : ""} />
             </button>
             <button
               onClick={() => router.push("/write")}
-              className="flex items-center gap-1.5 pl-4 pr-5 h-11 rounded-full text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 transition-colors"
+              className="flex items-center gap-1.5 pl-4 pr-5 h-9 rounded-full text-sm font-medium bg-gray-900 text-white active:bg-gray-700 transition-colors"
             >
               <PenLine size={14} />
               <span>New article</span>
             </button>
+            {/* User monogram — opens account menu */}
             <button
-              onClick={logout}
-              title="Sign out"
-              className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
+              onClick={() => setShowUserMenu(true)}
+              className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 text-xs font-bold flex-shrink-0 active:bg-gray-300 transition-colors"
             >
-              <LogOut size={15} />
+              {monogram}
             </button>
           </div>
         </div>
@@ -401,6 +409,56 @@ export default function Dashboard() {
                   </button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── User account bottom sheet ─────────────────────────────── */}
+      {showUserMenu && (
+        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowUserMenu(false)}>
+          <div className="absolute inset-0 bg-black/30" />
+          <div
+            className="relative w-full bg-white rounded-t-2xl shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-9 h-1 bg-gray-200 rounded-full" />
+            </div>
+
+            {/* User identity */}
+            <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100">
+              <div className="w-11 h-11 rounded-full bg-gray-900 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                {monogram}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{user.name || user.username}</p>
+                <p className="text-xs text-gray-400 truncate">{user.username}</p>
+              </div>
+            </div>
+
+            <div className="px-3 pt-1 pb-2">
+              {cfg && (
+                <a
+                  href={`${cfg.siteUrl}/wp-admin/profile.php`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setShowUserMenu(false)}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+                >
+                  <User size={18} className="text-gray-500" />
+                  Edit profile
+                </a>
+              )}
+              <button
+                onClick={() => { logout(); setShowUserMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
+              >
+                <LogOut size={18} />
+                Sign out
+              </button>
             </div>
           </div>
         </div>
