@@ -9,7 +9,7 @@ import LoadingScreen from "@/components/ui/LoadingScreen";
 import { getPost, getComments, createComment, updateComment, deleteComment, getMe } from "@/lib/api/wordpress";
 import type { WPPostListItem, WPComment } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
-import { ArrowLeft, ExternalLink, Eye, MessageSquare, ThumbsUp } from "lucide-react";
+import { ArrowLeft, ExternalLink, Eye, MessageSquare, ThumbsUp, Share2 } from "lucide-react";
 
 export default function PostPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +30,12 @@ export default function PostPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [canShare, setCanShare] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setCanShare(typeof navigator !== "undefined" && !!navigator.share);
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -114,6 +119,14 @@ export default function PostPage() {
 
   const title = stripHtml(post.title.rendered) || "Untitled";
   const isPublished = post.status === "publish";
+
+  async function handleShare() {
+    try {
+      await navigator.share({ title, url: post!.link });
+    } catch {
+      /* user cancelled or share unavailable — no action needed */
+    }
+  }
   const safeContent = DOMPurify.sanitize(post.content.rendered);
   const srcset = post.featured_image_srcset?.join(", ") || undefined;
 
@@ -130,18 +143,27 @@ export default function PostPage() {
             <span>Back</span>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? "bg-green-500" : "bg-gray-400"}`} />
               {isPublished ? "Published" : "Draft"}
             </span>
+            {isPublished && canShare && (
+              <button
+                onClick={handleShare}
+                title="Share"
+                className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 active:bg-gray-100 active:text-gray-700 transition-colors"
+              >
+                <Share2 size={16} />
+              </button>
+            )}
             {isPublished && (
               <a
                 href={post.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="View on WordPress"
-                className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
+                title="View on site"
+                className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 active:bg-gray-100 active:text-gray-700 transition-colors"
               >
                 <ExternalLink size={14} />
               </a>
