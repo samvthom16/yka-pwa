@@ -294,12 +294,14 @@ export default function Dashboard() {
                       {/* Category badges */}
                       {categories.length > 0 && (
                         <div className="mt-1.5 flex items-center gap-1">
-                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-                            {categories[0].name}
-                          </span>
-                          {categories.length > 1 && (
+                          {categories.slice(0, 2).map((cat) => (
+                            <span key={cat.id} className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                              {cat.name}
+                            </span>
+                          ))}
+                          {categories.length > 2 && (
                             <span className="text-[11px] text-gray-400 font-medium">
-                              +{categories.length - 1}
+                              +{categories.length - 2}
                             </span>
                           )}
                         </div>
@@ -440,18 +442,13 @@ export default function Dashboard() {
             </div>
 
             <div className="px-3 pt-1 pb-2">
-              {cfg && (
-                <a
-                  href={`${cfg.siteUrl}/wp-admin/profile.php`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setShowUserMenu(false)}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
-                >
-                  <User size={18} className="text-gray-500" />
-                  Edit profile
-                </a>
-              )}
+              <button
+                onClick={() => { router.push("/profile"); setShowUserMenu(false); }}
+                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+              >
+                <User size={18} className="text-gray-500" />
+                Edit profile
+              </button>
               <button
                 onClick={() => { logout(); setShowUserMenu(false); }}
                 className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
