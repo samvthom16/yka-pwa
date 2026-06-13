@@ -65,6 +65,12 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
       () => window.matchMedia("(max-width: 639px)").matches
     );
     const imageInputRef = useRef<HTMLInputElement>(null);
+    /* Blur is debounced so iOS scroll-induced keyboard dismissal doesn't
+       instantly hide the toolbar — the timer is reset on every scroll event */
+    const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    /* Keep a ref to onFocusChange so the scroll handler never captures a stale prop */
+    const onFocusChangeRef = useRef(onFocusChange);
+    useEffect(() => { onFocusChangeRef.current = onFocusChange; }, [onFocusChange]);
 
     useEffect(() => {
       const mq = window.matchMedia("(max-width: 639px)");
@@ -197,9 +203,25 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         });
       },
 
-      onFocus: () => { hideBubble(); setEditorFocused(true); onFocusChange?.(true); },
-      onBlur: () => { setEditorFocused(false); onFocusChange?.(false); },
+      onFocus: () => {
+        if (blurTimerRef.current) { clearTimeout(blurTimerRef.current); blurTimerRef.current = null; }
+        hideBubble();
+        setEditorFocused(true);
+        onFocusChangeRef.current?.(true);
+      },
+      onBlur: () => {
+        blurTimerRef.current = setTimeout(() => {
+          blurTimerRef.current = null;
+          setEditorFocused(false);
+          onFocusChangeRef.current?.(false);
+        }, 300);
+      },
     });
+
+    /* ── Clean up blur timer on unmount ────────────────────── */
+    useEffect(() => () => {
+      if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
+    }, []);
 
     /* ── Expose handle ──────────────────────────────────────── */
     useImperativeHandle(ref, () => ({
@@ -231,11 +253,23 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
       return () => window.removeEventListener("keydown", handler, true);
     }, [slashMenu.isOpen, closeSlashMenu]);
 
-    /* ── Hide bubble on scroll (debounced to avoid iOS bounce) ── */
+    /* ── Hide bubble on scroll; keep toolbar alive during scroll ─── */
     useEffect(() => {
       let lastY = window.scrollY;
       const onScroll = () => {
-        if (Math.abs(window.scrollY - lastY) > 2) hideBubble();
+        if (Math.abs(window.scrollY - lastY) > 2) {
+          hideBubble();
+          /* If iOS dismissed the keyboard mid-scroll the blur timer is running.
+             Reset it so the toolbar stays visible for the full scroll gesture. */
+          if (blurTimerRef.current) {
+            clearTimeout(blurTimerRef.current);
+            blurTimerRef.current = setTimeout(() => {
+              blurTimerRef.current = null;
+              setEditorFocused(false);
+              onFocusChangeRef.current?.(false);
+            }, 300);
+          }
+        }
         lastY = window.scrollY;
       };
       window.addEventListener("scroll", onScroll, { passive: true });
