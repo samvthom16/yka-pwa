@@ -7,11 +7,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWpConfig } from "@/hooks/useWpConfig";
 import LoginScreen from "@/components/auth/LoginScreen";
 import LoadingScreen from "@/components/ui/LoadingScreen";
-import { getPosts, getPostCounts, getMe } from "@/lib/api/wordpress";
+import { getPosts, getPostCounts, getMe, deletePost } from "@/lib/api/wordpress";
 import type { WPPostListItem } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import WpImage from "@/components/ui/WpImage";
-import { Loader2, PenLine, RefreshCw, LogOut, Eye, MessageSquare } from "lucide-react";
+import { Loader2, PenLine, RefreshCw, LogOut, Eye, MessageSquare, MoreVertical, Trash2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const PER_PAGE = 20;
 
@@ -19,10 +20,14 @@ type Filter = "all" | "publish" | "draft";
 
 export default function Dashboard() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user, isLoading: authLoading, login, logout } = useAuth();
   const cfg = useWpConfig(user);
   const [filter, setFilter] = useState<Filter>("all");
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [activeMenu, setActiveMenu] = useState<WPPostListItem | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   /* ── Resolve WP author ID ────────────────────────────────────── */
   const { data: me } = useQuery({
@@ -92,6 +97,33 @@ export default function Dashboard() {
 
   const isInitialLoad = postsLoading && allPosts.length === 0;
   const isBackgroundRefetch = postsRefetching && allPosts.length > 0;
+
+  function isPostEditable(post: WPPostListItem) {
+    const cats = post._embedded?.["wp:term"]
+      ?.find((g) => g[0]?.taxonomy === "category")
+      ?.map((c) => c.name) ?? [];
+    return post.status === "draft" || cats.some((n) => ["Unlisted", "Unreviewed"].includes(n));
+  }
+
+  function closeMenu() {
+    setActiveMenu(null);
+    setDeleteConfirm(false);
+  }
+
+  async function handleDelete() {
+    if (!cfg || !activeMenu) return;
+    setIsDeleting(true);
+    try {
+      await deletePost(cfg, activeMenu.id);
+      await queryClient.invalidateQueries({ queryKey: ["posts"] });
+      await queryClient.invalidateQueries({ queryKey: ["post-counts"] });
+      closeMenu();
+    } catch {
+      /* silently ignore — user can retry */
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   function handleRefresh() {
     refetchPosts();
@@ -219,35 +251,27 @@ export default function Dashboard() {
               const categories = post._embedded?.["wp:term"]
                 ?.find((group) => group[0]?.taxonomy === "category")
                 ?.filter((t) => t.name !== "Uncategorized") ?? [];
-              const categoryNames = categories.map((c) => c.name);
-              const isEditable =
-                post.status === "draft" ||
-                categoryNames.some((n) => ["Unlisted", "Unreviewed"].includes(n));
 
               return (
                 <li key={post.id}>
-                  <div className="flex items-start gap-4 py-5 -mx-2 px-2 rounded-xl active:bg-gray-50 transition-colors">
+                  <div className="flex items-start gap-3 py-5">
 
-                    {/* Left: text content */}
+                    {/* Text content — tapping navigates to post view */}
                     <button
                       onClick={() => router.push(`/posts/${post.id}`)}
                       className="flex-1 min-w-0 text-left"
                     >
-                      {/* Title + status pill inline */}
-                      <div className="flex items-start gap-2">
-                        <p className="flex-1 text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
-                          {title}
-                        </p>
-                        <span className={`flex-shrink-0 mt-0.5 inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${
-                          isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? "bg-green-500" : "bg-gray-400"}`} />
+                      <p className="text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
+                        {title}
+                      </p>
+
+                      {/* Date + stats */}
+                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+                        <span className={`inline-flex items-center gap-1 font-medium ${isPublished ? "text-green-600" : "text-gray-400"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isPublished ? "bg-green-500" : "bg-gray-300"}`} />
                           {isPublished ? "Published" : "Draft"}
                         </span>
-                      </div>
-
-                      {/* Date + stats (replaces excerpt) */}
-                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+                        <span className="text-gray-300">·</span>
                         <span>{formatDate(post.modified)}</span>
                         <span className="flex items-center gap-0.5">
                           <Eye size={11} />
@@ -274,35 +298,20 @@ export default function Dashboard() {
                       )}
                     </button>
 
-                    {/* Right: thumbnail with edit overlay, or edit button alone */}
-                    <div className="flex-shrink-0">
-                      {thumbnail ? (
-                        <div className="relative">
-                          <button onClick={() => router.push(`/posts/${post.id}`)}>
-                            <WpImage
-                              src={thumbnail}
-                              className="w-20 h-20 rounded-xl object-cover"
-                            />
-                          </button>
-                          {isEditable && (
-                            <button
-                              onClick={() => router.push(`/write?id=${post.id}`)}
-                              className="absolute bottom-1.5 right-1.5 w-7 h-7 bg-black/50 backdrop-blur-sm rounded-lg flex items-center justify-center active:bg-black/70 transition-colors"
-                            >
-                              <PenLine size={12} className="text-white" />
-                            </button>
-                          )}
-                        </div>
-                      ) : isEditable ? (
-                        <button
-                          onClick={() => router.push(`/write?id=${post.id}`)}
-                          className="flex items-center gap-1 text-[11px] font-medium text-gray-400 hover:text-gray-700 active:text-gray-700 transition-colors py-2 px-2 -mr-2 mt-0.5"
-                        >
-                          <PenLine size={11} />
-                          Edit
-                        </button>
-                      ) : null}
-                    </div>
+                    {/* Thumbnail — tapping navigates to post view */}
+                    {thumbnail && (
+                      <button onClick={() => router.push(`/posts/${post.id}`)} className="flex-shrink-0">
+                        <WpImage src={thumbnail} className="w-20 h-20 rounded-xl object-cover" />
+                      </button>
+                    )}
+
+                    {/* 3-dot action menu */}
+                    <button
+                      onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
+                      className="flex-shrink-0 w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -mr-2 mt-0.5"
+                    >
+                      <MoreVertical size={17} />
+                    </button>
 
                   </div>
                 </li>
@@ -324,6 +333,78 @@ export default function Dashboard() {
           <p className="text-center text-xs text-gray-200 py-6">All articles loaded</p>
         )}
       </main>
+
+      {/* ── Post action bottom sheet ──────────────────────────────── */}
+      {activeMenu && (
+        <div className="fixed inset-0 z-50 flex items-end" onClick={closeMenu}>
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/30" />
+
+          {/* Sheet */}
+          <div
+            className="relative w-full bg-white rounded-t-2xl shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+            style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-3 pb-2">
+              <div className="w-9 h-1 bg-gray-200 rounded-full" />
+            </div>
+
+            {/* Post title */}
+            <p className="px-5 pb-1 text-sm font-semibold text-gray-900 line-clamp-1">
+              {stripHtml(activeMenu.title.rendered) || "Untitled"}
+            </p>
+
+            <div className="px-3 pt-1 pb-2">
+              {deleteConfirm ? (
+                /* ── Confirm delete ──────────────────────────── */
+                <>
+                  <p className="px-3 py-3 text-sm text-gray-500">
+                    This will permanently delete the article. This cannot be undone.
+                  </p>
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm font-medium text-red-600 bg-red-50 active:bg-red-100 disabled:opacity-60"
+                  >
+                    {isDeleting
+                      ? <Loader2 size={18} className="animate-spin" />
+                      : <Trash2 size={18} />}
+                    {isDeleting ? "Deleting…" : "Yes, permanently delete"}
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirm(false)}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-500 active:bg-gray-50 mt-0.5"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                /* ── Actions ─────────────────────────────────── */
+                <>
+                  {isPostEditable(activeMenu) && (
+                    <button
+                      onClick={() => { router.push(`/write?id=${activeMenu.id}`); closeMenu(); }}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+                    >
+                      <PenLine size={18} className="text-gray-500" />
+                      Edit article
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setDeleteConfirm(true)}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
+                  >
+                    <Trash2 size={18} />
+                    Delete article
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
