@@ -13,7 +13,6 @@ import LoginScreen from "@/components/auth/LoginScreen";
 import { createPost, updatePost, getPost, uploadMedia } from "@/lib/api/wordpress";
 import { useWpConfig } from "@/hooks/useWpConfig";
 import LoadingScreen from "@/components/ui/LoadingScreen";
-import WpImage from "@/components/ui/WpImage";
 import type { PublishStatus } from "./EditorHeader";
 
 const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
@@ -69,6 +68,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
 
   const [title, setTitle] = useState("");
   const [thumbnail, setThumbnail] = useState<string | null>(null);
+  const [thumbnailError, setThumbnailError] = useState(false);
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "unsaved">("saved");
@@ -197,6 +197,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;
         setThumbnail(dataUrl);
+        setThumbnailError(false);
         latestThumbnail.current = dataUrl;
         triggerSave();
       };
@@ -210,6 +211,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
 
   const removeThumbnail = useCallback(() => {
     setThumbnail(null);
+    setThumbnailError(false);
     latestThumbnail.current = null;
     thumbnailFileRef.current = null;
     if (thumbnailInputRef.current) thumbnailInputRef.current.value = "";
@@ -332,25 +334,35 @@ const [draftLoaded, setDraftLoaded] = useState(false);
         {/* Post thumbnail — optional cover image */}
         <div className="mb-10">
           {thumbnail ? (
-            <div className="relative group rounded-lg overflow-hidden">
-              {thumbnail.startsWith("data:") ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={thumbnail} alt="Post thumbnail" className="w-full object-cover max-h-[360px]" />
-              ) : (
-                <WpImage
+            thumbnailError ? (
+              /* Image URL is broken — show a clear placeholder with remove option */
+              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-dashed border-gray-200 bg-gray-50">
+                <span className="text-sm text-gray-400">Cover image unavailable (broken URL)</span>
+                <button
+                  onClick={removeThumbnail}
+                  className="text-xs font-medium text-gray-500 hover:text-gray-800 active:text-gray-800 transition-colors flex-shrink-0"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="relative group rounded-lg overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={thumbnail}
                   alt="Post thumbnail"
                   className="w-full object-cover max-h-[360px]"
+                  onError={() => setThumbnailError(true)}
                 />
-              )}
-              <button
-                onClick={removeThumbnail}
-                className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 active:bg-black/70 text-white text-xs px-3 py-1.5 rounded-full sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150"
-                aria-label="Remove thumbnail"
-              >
-                Remove
-              </button>
-            </div>
+                <button
+                  onClick={removeThumbnail}
+                  className="absolute top-3 right-3 bg-black/50 hover:bg-black/70 active:bg-black/70 text-white text-xs px-3 py-1.5 rounded-full sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150"
+                  aria-label="Remove thumbnail"
+                >
+                  Remove
+                </button>
+              </div>
+            )
           ) : (
             <button
               onClick={() => thumbnailInputRef.current?.click()}
