@@ -294,12 +294,14 @@ export default function Dashboard() {
                       {/* Category badges */}
                       {categories.length > 0 && (
                         <div className="mt-1.5 flex items-center gap-1">
-                          <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
-                            {categories[0].name}
-                          </span>
-                          {categories.length > 1 && (
+                          {categories.slice(0, 2).map((cat) => (
+                            <span key={cat.id} className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
+                              {cat.name}
+                            </span>
+                          ))}
+                          {categories.length > 2 && (
                             <span className="text-[11px] text-gray-400 font-medium">
-                              +{categories.length - 1}
+                              +{categories.length - 2}
                             </span>
                           )}
                         </div>
