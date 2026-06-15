@@ -5,6 +5,7 @@ import { Eye, Upload, Check, Loader2, ArrowLeft } from "lucide-react";
 import type { TipTapEditorHandle } from "./TipTapEditor";
 
 export type PublishStatus = "idle" | "publishing" | "success" | "error";
+export type PublishTarget = "publish" | "draft" | null;
 
 interface EditorHeaderProps {
   title: string;
@@ -13,8 +14,9 @@ interface EditorHeaderProps {
   saveStatus: "saved" | "saving" | "unsaved";
   editorRef: RefObject<TipTapEditorHandle | null>;
   publishStatus: PublishStatus;
+  publishTarget: PublishTarget;
   publishError: string;
-  onPublish: () => void;
+  onPublish: (status: "publish" | "draft") => void;
   onDismissPublish: () => void;
   onBack: () => void;
 }
@@ -110,13 +112,12 @@ function PreviewModal({
 }
 
 /* ── Publishing overlay ───────────────────────────────────────── */
-function PublishingOverlay({ isEditMode }: { isEditMode: boolean }) {
+function PublishingOverlay({ target }: { target: PublishTarget }) {
+  const label = target === "draft" ? "Saving draft…" : "Publishing your article…";
   return (
     <div className="fixed inset-0 z-[400] flex flex-col items-center justify-center gap-4 bg-white/90 backdrop-blur-sm">
       <Loader2 size={28} className="animate-spin text-gray-400" />
-      <p className="text-sm font-medium text-gray-600">
-        {isEditMode ? "Updating your article…" : "Publishing your article…"}
-      </p>
+      <p className="text-sm font-medium text-gray-600">{label}</p>
       <p className="text-xs text-gray-400">This may take a few seconds</p>
     </div>
   );
@@ -159,6 +160,7 @@ export default function EditorHeader({
   saveStatus,
   editorRef,
   publishStatus,
+  publishTarget,
   publishError,
   onPublish,
   onDismissPublish,
@@ -218,19 +220,31 @@ export default function EditorHeader({
             <Eye size={15} />
           </IconBtn>
 
+          {/* Save as draft button */}
+          <button
+            onClick={() => onPublish("draft")}
+            disabled={publishStatus === "publishing"}
+            className="flex items-center gap-1.5 ml-1 px-3 h-9 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {publishStatus === "publishing" && publishTarget === "draft" ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : null}
+            <span>{publishStatus === "publishing" && publishTarget === "draft" ? "Saving…" : "Draft"}</span>
+          </button>
+
           {/* Publish button */}
           <button
-            onClick={onPublish}
+            onClick={() => onPublish("publish")}
             disabled={publishStatus === "publishing"}
-            className="flex items-center gap-1.5 ml-1 pl-4 pr-4 h-11 rounded-full text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-1.5 ml-1 pl-4 pr-4 h-9 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {publishStatus === "publishing" ? (
+            {publishStatus === "publishing" && publishTarget === "publish" ? (
               <Loader2 size={13} className="animate-spin" />
             ) : (
               <Upload size={13} />
             )}
             <span>
-              {publishStatus === "publishing"
+              {publishStatus === "publishing" && publishTarget === "publish"
                 ? isEditMode ? "Updating…" : "Publishing…"
                 : isEditMode ? "Update" : "Publish"}
             </span>
@@ -250,7 +264,7 @@ export default function EditorHeader({
       )}
 
       {/* Publishing overlay */}
-      {publishStatus === "publishing" && <PublishingOverlay isEditMode={isEditMode} />}
+      {publishStatus === "publishing" && <PublishingOverlay target={publishTarget} />}
 
       {/* Publish error modal */}
       <PublishModal
