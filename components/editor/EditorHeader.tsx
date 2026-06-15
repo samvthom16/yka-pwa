@@ -1,7 +1,7 @@
 "use client";
 
 import { RefObject, useCallback, useState } from "react";
-import { Eye, Upload, Check, Loader2, ArrowLeft } from "lucide-react";
+import { Eye, Upload, Check, Loader2, ArrowLeft, X } from "lucide-react";
 import type { TipTapEditorHandle } from "./TipTapEditor";
 
 export type PublishStatus = "idle" | "publishing" | "success" | "error";
@@ -64,48 +64,40 @@ function PreviewModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="relative w-full max-w-3xl max-h-[85vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-        {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <span className="text-sm font-medium text-gray-700">
-            Preview — {title || "Untitled"}
-          </span>
+    <div className="fixed inset-0 z-[300] bg-white flex flex-col">
+      {/* Header — mirrors reading page */}
+      <div className="safe-top sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-gray-100">
+        <div className="flex items-center justify-between h-14 px-5">
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 active:text-gray-700 active:bg-gray-100 transition-colors text-lg leading-none"
+            className="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
           >
-            ✕
+            <X size={15} />
           </button>
+          <span className="text-xs font-medium text-gray-400 tracking-widest uppercase">Preview</span>
+          <div className="w-9" />
         </div>
-        {/* Preview content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 overscroll-contain">
-          {title && (
-            <h1
-              className="text-4xl font-bold tracking-tight text-gray-900 mb-8 break-words"
-              style={{
-                fontFamily:
-                  '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                overflowWrap: "break-word",
-                wordBreak: "break-word",
-              }}
-            >
-              {title}
-            </h1>
-          )}
+      </div>
+
+      {/* Article content — same layout as reading page */}
+      <div className="flex-1 overflow-y-auto overscroll-contain">
+        <article className="w-full max-w-[720px] mx-auto px-6 py-12 md:px-8">
+          <h1
+            className="text-[1.875rem] sm:text-[2.25rem] md:text-[3rem] font-bold leading-tight tracking-tight text-gray-900 mb-8"
+            style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}
+          >
+            {title || "Untitled"}
+          </h1>
           {thumbnail && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={thumbnail}
               alt="Cover"
-              className="w-full object-cover max-h-[300px] rounded-lg mb-8"
+              className="w-full rounded-xl object-cover max-h-[400px] mb-10"
             />
           )}
-          <div
-            className="ProseMirror"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        </div>
+          <div className="ProseMirror reader" dangerouslySetInnerHTML={{ __html: html }} />
+        </article>
       </div>
     </div>
   );
