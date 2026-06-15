@@ -172,7 +172,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
 
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const val = e.target.value;
+      const val = e.target.value.replace(/\b\w/g, (c) => c.toUpperCase());
       setTitle(val);
       latestTitle.current = val;
       triggerSave();
