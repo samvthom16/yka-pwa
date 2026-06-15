@@ -169,7 +169,7 @@ export default function Dashboard() {
               className="flex items-center gap-1.5 pl-4 pr-5 h-9 rounded-full text-sm font-medium bg-gray-900 text-white active:bg-gray-700 transition-colors"
             >
               <PenLine size={14} />
-              <span>New article</span>
+              <span>Write</span>
             </button>
             {/* User monogram — opens account menu */}
             <button
