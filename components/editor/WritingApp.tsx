@@ -77,6 +77,8 @@ const [draftLoaded, setDraftLoaded] = useState(false);
   const [publishStatus, setPublishStatus] = useState<PublishStatus>("idle");
   const [publishTarget, setPublishTarget] = useState<PublishTarget>(null);
   const [publishError, setPublishError] = useState("");
+  const [originalStatus, setOriginalStatus] = useState<"publish" | "draft" | null>(null);
+  const [showUnpublishConfirm, setShowUnpublishConfirm] = useState(false);
 
   const { draft, saveDraft, clearDraft, isLoading } = useDraft("default");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,6 +100,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
       setTitle(t);
       latestTitle.current = t;
       setInitialContent(post.content.rendered);
+      setOriginalStatus(post.status === "publish" ? "publish" : "draft");
       const thumb = post.featured_image || null;
       if (thumb) {
         setThumbnail(thumb);
@@ -169,7 +172,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
 
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const val = e.target.value;
+      const val = e.target.value.replace(/\b\w/g, (c) => c.toUpperCase());
       setTitle(val);
       latestTitle.current = val;
       triggerSave();
@@ -219,8 +222,14 @@ const [draftLoaded, setDraftLoaded] = useState(false);
   }, [triggerSave]);
 
   /* ── Publish / Save draft to WordPress ───────────────────────── */
-  const handlePublish = useCallback(async (targetStatus: "publish" | "draft") => {
+  const handlePublish = useCallback(async (targetStatus: "publish" | "draft", confirmed = false) => {
     if (!user || !cfg) return;
+
+    /* Warn before unpublishing a live post */
+    if (targetStatus === "draft" && isEditMode && originalStatus === "publish" && !confirmed) {
+      setShowUnpublishConfirm(true);
+      return;
+    }
 
     const html = editorRef.current?.getHTML() ?? "";
     const plainText = html.replace(/<[^>]*>/g, "").trim();
@@ -282,7 +291,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
       setPublishStatus("error");
       setPublishTarget(null);
     }
-  }, [user, cfg, title, thumbnail, editorRef, clearDraft, isEditMode, postId, queryClient]);
+  }, [user, cfg, title, thumbnail, editorRef, clearDraft, isEditMode, postId, queryClient, originalStatus]);
 
   if (authLoading) return <LoadingScreen />;
 
@@ -407,6 +416,32 @@ const [draftLoaded, setDraftLoaded] = useState(false);
         charCount={charCount}
         saveStatus={saveStatus}
       />
+
+      {/* Unpublish confirmation */}
+      {showUnpublishConfirm && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
+            <h2 className="text-base font-semibold text-gray-900 mb-2">Move to drafts?</h2>
+            <p className="text-sm text-gray-500 mb-5">
+              This will unpublish the article — it will no longer be visible to readers.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUnpublishConfirm(false)}
+                className="flex-1 text-sm font-medium text-gray-700 border border-gray-200 py-2.5 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setShowUnpublishConfirm(false); handlePublish("draft", true); }}
+                className="flex-1 text-sm font-medium text-white bg-gray-900 py-2.5 rounded-lg hover:bg-gray-700 active:bg-gray-800 transition-colors"
+              >
+                Move to drafts
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
