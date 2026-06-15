@@ -11,7 +11,7 @@ import { getPosts, getPostCounts, getMe, deletePost, getMyComments } from "@/lib
 import type { WPPostListItem } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import WpImage from "@/components/ui/WpImage";
-import { Loader2, PenLine, RefreshCw, LogOut, Eye, MessageSquare, MoreVertical, Trash2, User } from "lucide-react";
+import { Loader2, PenLine, RefreshCw, LogOut, MessageSquare, MoreVertical, Trash2, User } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PER_PAGE = 20;
@@ -304,13 +304,9 @@ export default function Dashboard() {
                         </span>
                         <span className="text-gray-300">·</span>
                         <span>{formatDate(post.modified)}</span>
-                        <span className="flex items-center gap-0.5">
-                          <Eye size={11} />
-                          {post.view_count.toLocaleString()}
-                        </span>
-                        <span className="flex items-center gap-0.5">
+                        <span className="flex items-center gap-1">
                           <MessageSquare size={11} />
-                          {post.total_comments}
+                          {post.total_comments} comments
                         </span>
                       </div>
 
