@@ -66,7 +66,7 @@ export default function ProfileEditor() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.back()}
-              className="flex items-center justify-center w-11 h-11 -ml-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
+              className="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
             >
               <ArrowLeft size={15} />
             </button>
