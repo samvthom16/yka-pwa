@@ -16,14 +16,14 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const PER_PAGE = 20;
 
-type Filter = "all" | "publish" | "draft" | "comments";
+type Filter = "publish" | "draft" | "comments";
 
 export default function Dashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading, login, logout } = useAuth();
   const cfg = useWpConfig(user);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>("publish");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<WPPostListItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -121,7 +121,7 @@ export default function Dashboard() {
   const filtered = allPosts.filter((p) => {
     if (filter === "publish") return p.status === "publish";
     if (filter === "draft") return p.status === "draft";
-    return true;
+    return false;
   });
 
   const allComments = commentsData?.pages.flatMap((p) => p.comments) ?? [];
@@ -211,9 +211,9 @@ export default function Dashboard() {
 
         {/* Filter tabs */}
         <div className="flex items-center gap-1 mb-6 border-b border-gray-100">
-          {(["all", "publish", "draft", "comments"] as Filter[]).map((f) => {
-            const label = f === "all" ? "All" : f === "publish" ? "Published" : f === "draft" ? "Drafts" : "Comments";
-            const count = f === "comments" ? commentTotal : (counts?.[f as "all" | "publish" | "draft"] ?? 0);
+          {(["publish", "draft", "comments"] as Filter[]).map((f) => {
+            const label = f === "publish" ? "Published" : f === "draft" ? "Drafts" : "Comments";
+            const count = f === "comments" ? commentTotal : (counts?.[f as "publish" | "draft"] ?? 0);
             const active = filter === f;
             return (
               <button
