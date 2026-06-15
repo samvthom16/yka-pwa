@@ -18,7 +18,6 @@ import TextAlign from "@tiptap/extension-text-align";
 import CharacterCount from "@tiptap/extension-character-count";
 import Typography from "@tiptap/extension-typography";
 import BubbleMenuBar from "./BubbleMenuBar";
-import MobileFormattingSheet from "./MobileFormattingSheet";
 import SlashCommandMenu from "./SlashCommandMenu";
 
 export interface TipTapEditorHandle {
@@ -59,25 +58,7 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
   function TipTapEditor({ onUpdate, initialContent, onFocusChange }, ref) {
     const [slashMenu, setSlashMenu] = useState<SlashMenuState>(INITIAL_SLASH);
     const [bubbleMenu, setBubbleMenu] = useState<BubbleMenuState>(HIDDEN_BUBBLE);
-    const [editorFocused, setEditorFocused] = useState(false);
-    /* Read synchronously on first render (safe — TipTapEditor is client-only via ssr:false) */
-    const [isMobile, setIsMobile] = useState(
-      () => window.matchMedia("(max-width: 639px)").matches
-    );
     const imageInputRef = useRef<HTMLInputElement>(null);
-    /* Blur is debounced so iOS scroll-induced keyboard dismissal doesn't
-       instantly hide the toolbar — the timer is reset on every scroll event */
-    const blurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    /* Keep a ref to onFocusChange so the scroll handler never captures a stale prop */
-    const onFocusChangeRef = useRef(onFocusChange);
-    useEffect(() => { onFocusChangeRef.current = onFocusChange; }, [onFocusChange]);
-
-    useEffect(() => {
-      const mq = window.matchMedia("(max-width: 639px)");
-      const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
-    }, []);
 
     const closeSlashMenu = useCallback(() => setSlashMenu(INITIAL_SLASH), []);
     const hideBubble = useCallback(() => setBubbleMenu(HIDDEN_BUBBLE), []);
@@ -203,25 +184,9 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         });
       },
 
-      onFocus: () => {
-        if (blurTimerRef.current) { clearTimeout(blurTimerRef.current); blurTimerRef.current = null; }
-        hideBubble();
-        setEditorFocused(true);
-        onFocusChangeRef.current?.(true);
-      },
-      onBlur: () => {
-        blurTimerRef.current = setTimeout(() => {
-          blurTimerRef.current = null;
-          setEditorFocused(false);
-          onFocusChangeRef.current?.(false);
-        }, 300);
-      },
+      onFocus: () => { hideBubble(); onFocusChange?.(true); },
+      onBlur: () => { onFocusChange?.(false); },
     });
-
-    /* ── Clean up blur timer on unmount ────────────────────── */
-    useEffect(() => () => {
-      if (blurTimerRef.current) clearTimeout(blurTimerRef.current);
-    }, []);
 
     /* ── Expose handle ──────────────────────────────────────── */
     useImperativeHandle(ref, () => ({
@@ -253,23 +218,11 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
       return () => window.removeEventListener("keydown", handler, true);
     }, [slashMenu.isOpen, closeSlashMenu]);
 
-    /* ── Hide bubble on scroll; keep toolbar alive during scroll ─── */
+    /* ── Hide bubble on scroll ──────────────────────────────── */
     useEffect(() => {
       let lastY = window.scrollY;
       const onScroll = () => {
-        if (Math.abs(window.scrollY - lastY) > 2) {
-          hideBubble();
-          /* If iOS dismissed the keyboard mid-scroll the blur timer is running.
-             Reset it so the toolbar stays visible for the full scroll gesture. */
-          if (blurTimerRef.current) {
-            clearTimeout(blurTimerRef.current);
-            blurTimerRef.current = setTimeout(() => {
-              blurTimerRef.current = null;
-              setEditorFocused(false);
-              onFocusChangeRef.current?.(false);
-            }, 300);
-          }
-        }
+        if (Math.abs(window.scrollY - lastY) > 2) hideBubble();
         lastY = window.scrollY;
       };
       window.addEventListener("scroll", onScroll, { passive: true });
@@ -341,16 +294,8 @@ const TipTapEditor = forwardRef<TipTapEditorHandle, TipTapEditorProps>(
         {/* ── Editor ─────────────────────────────────────────── */}
         <EditorContent editor={editor} />
 
-        {/* ── Mobile: keyboard-attached formatting toolbar ────── */}
-        {isMobile && editor && (
-          <MobileFormattingSheet
-            editor={editor}
-            isFocused={editorFocused}
-          />
-        )}
-
-        {/* ── Desktop: floating bubble menu ───────────────────── */}
-        {!isMobile && editor && bubbleMenu.visible && (
+        {/* ── Floating bubble menu (all screen sizes) ─────────── */}
+        {editor && bubbleMenu.visible && (
           <div
             className="fixed z-[150] -translate-x-1/2 pointer-events-auto"
             style={{ top: bubbleMenu.top, left: bubbleMenu.left }}

@@ -10,7 +10,6 @@ interface EditorHeaderProps {
   title: string;
   thumbnail: string | null;
   isEditMode: boolean;
-  editorFocused: boolean;
   saveStatus: "saved" | "saving" | "unsaved";
   editorRef: RefObject<TipTapEditorHandle | null>;
   publishStatus: PublishStatus;
@@ -157,7 +156,6 @@ export default function EditorHeader({
   title,
   thumbnail,
   isEditMode,
-  editorFocused,
   saveStatus,
   editorRef,
   publishStatus,
@@ -177,7 +175,7 @@ export default function EditorHeader({
 
   return (
     <>
-      <header className={`safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 transition-opacity duration-150 ${editorFocused ? "opacity-0 pointer-events-none sm:opacity-100 sm:pointer-events-auto" : ""}`}>
+      <header className="safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
         {/* ── Left: back + brand + title ─────────────────────── */}
         <div className="flex items-center gap-2.5 min-w-0">
