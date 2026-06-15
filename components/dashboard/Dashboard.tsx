@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWpConfig } from "@/hooks/useWpConfig";
 import LoginScreen from "@/components/auth/LoginScreen";
 import LoadingScreen from "@/components/ui/LoadingScreen";
-import { getPosts, getPostCounts, getMe, deletePost } from "@/lib/api/wordpress";
+import { getPosts, getPostCounts, getMe, deletePost, getMyComments } from "@/lib/api/wordpress";
 import type { WPPostListItem } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import WpImage from "@/components/ui/WpImage";
@@ -16,14 +16,14 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const PER_PAGE = 20;
 
-type Filter = "all" | "publish" | "draft";
+type Filter = "publish" | "draft" | "comments";
 
 export default function Dashboard() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading, login, logout } = useAuth();
   const cfg = useWpConfig(user);
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<Filter>("publish");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<WPPostListItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -75,21 +75,41 @@ export default function Dashboard() {
     placeholderData: { all: 0, publish: 0, draft: 0 },
   });
 
+  /* ── My comments (infinite) ──────────────────────────────────── */
+  const {
+    data: commentsData,
+    fetchNextPage: fetchNextCommentsPage,
+    hasNextPage: hasNextCommentsPage,
+    isFetchingNextPage: isFetchingNextCommentsPage,
+    isLoading: commentsLoading,
+  } = useInfiniteQuery({
+    queryKey: ["my-comments", authorId],
+    queryFn: ({ pageParam = 1 }) =>
+      getMyComments(cfg!, authorId!, pageParam as number),
+    getNextPageParam: (lastPage, allPages) =>
+      allPages.length < lastPage.totalPages ? allPages.length + 1 : undefined,
+    initialPageParam: 1,
+    enabled: !!cfg && authorId !== undefined && filter === "comments",
+  });
+
   /* ── Infinite scroll sentinel ────────────────────────────────── */
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
+        if (!entries[0].isIntersecting) return;
+        if (filter === "comments") {
+          if (hasNextCommentsPage && !isFetchingNextCommentsPage) fetchNextCommentsPage();
+        } else {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
         }
       },
       { rootMargin: "200px" }
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [filter, hasNextPage, isFetchingNextPage, fetchNextPage, hasNextCommentsPage, isFetchingNextCommentsPage, fetchNextCommentsPage]);
 
   /* ── Auth states ─────────────────────────────────────────────── */
   if (authLoading) return <LoadingScreen />;
@@ -101,8 +121,11 @@ export default function Dashboard() {
   const filtered = allPosts.filter((p) => {
     if (filter === "publish") return p.status === "publish";
     if (filter === "draft") return p.status === "draft";
-    return true;
+    return false;
   });
+
+  const allComments = commentsData?.pages.flatMap((p) => p.comments) ?? [];
+  const commentTotal = commentsData?.pages[0]?.total ?? 0;
 
   const isInitialLoad = postsLoading && allPosts.length === 0;
   const isBackgroundRefetch = postsRefetching && allPosts.length > 0;
@@ -169,7 +192,7 @@ export default function Dashboard() {
               className="flex items-center gap-1.5 pl-4 pr-5 h-9 rounded-full text-sm font-medium bg-gray-900 text-white active:bg-gray-700 transition-colors"
             >
               <PenLine size={14} />
-              <span>New article</span>
+              <span>Write</span>
             </button>
             {/* User monogram — opens account menu */}
             <button
@@ -188,16 +211,16 @@ export default function Dashboard() {
 
         {/* Filter tabs */}
         <div className="flex items-center gap-1 mb-6 border-b border-gray-100">
-          {(["all", "publish", "draft"] as Filter[]).map((f) => {
-            const label = f === "all" ? "All" : f === "publish" ? "Published" : "Drafts";
-            const count = counts?.[f] ?? 0;
+          {(["publish", "draft", "comments"] as Filter[]).map((f) => {
+            const label = f === "publish" ? "Published" : f === "draft" ? "Drafts" : "Comments";
+            const count = f === "comments" ? commentTotal : (counts?.[f as "publish" | "draft"] ?? 0);
             const active = filter === f;
             return (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
                 className={`relative flex items-center gap-1.5 px-3 py-3 text-sm font-medium transition-colors ${
-                  active ? "text-gray-900" : "text-gray-400 hover:text-gray-600 active:text-gray-600"
+                  active ? "text-gray-900" : "text-gray-400 active:text-gray-600"
                 }`}
               >
                 {label}
@@ -230,8 +253,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Empty state */}
-        {!isInitialLoad && filtered.length === 0 && (
+        {/* Empty state — posts */}
+        {filter !== "comments" && !isInitialLoad && filtered.length === 0 && (
           <div className="text-center py-20">
             <p className="text-gray-400 text-sm mb-4">
               {allPosts.length === 0
@@ -330,17 +353,79 @@ export default function Dashboard() {
           </ul>
         )}
 
+        {/* ── Comments tab ─────────────────────────────────────────── */}
+        {filter === "comments" && (
+          <>
+            {commentsLoading && allComments.length === 0 && (
+              <div className="space-y-1 animate-pulse">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="py-4 space-y-2">
+                    <div className="h-4 bg-gray-100 rounded w-full" />
+                    <div className="h-3 bg-gray-100 rounded w-2/3" />
+                    <div className="h-3 bg-gray-100 rounded w-1/3" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!commentsLoading && allComments.length === 0 && (
+              <div className="text-center py-20">
+                <p className="text-gray-400 text-sm">No comments yet.</p>
+              </div>
+            )}
+
+            {allComments.length > 0 && (
+              <ul className="divide-y divide-gray-100">
+                {allComments.map((comment) => {
+                  const postTitle = comment._embedded?.up?.[0]?.title?.rendered
+                    ? stripHtml(comment._embedded.up[0].title.rendered)
+                    : null;
+                  const commentText = stripHtml(comment.content.rendered);
+                  return (
+                    <li key={comment.id}>
+                      <button
+                        onClick={() => router.push(`/posts/${comment.post}`)}
+                        className="w-full text-left py-4"
+                      >
+                        <p className="text-sm text-gray-800 line-clamp-2 leading-relaxed">
+                          {commentText}
+                        </p>
+                        {postTitle && (
+                          <p className="mt-1.5 text-xs text-blue-500 truncate">
+                            {postTitle}
+                          </p>
+                        )}
+                        <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-400">
+                          <span>{formatDate(comment.date)}</span>
+                          {comment.status === "hold" && (
+                            <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600">
+                              Pending
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </>
+        )}
+
         {/* Sentinel — triggers next page */}
         <div ref={sentinelRef} className="h-1" />
 
-        {isFetchingNextPage && (
+        {(isFetchingNextPage || isFetchingNextCommentsPage) && (
           <div className="flex justify-center py-6">
             <Loader2 size={16} className="animate-spin text-gray-300" />
           </div>
         )}
 
-        {!hasNextPage && allPosts.length > 0 && !isInitialLoad && (
+        {filter !== "comments" && !hasNextPage && allPosts.length > 0 && !isInitialLoad && (
           <p className="text-center text-xs text-gray-200 py-6">All articles loaded</p>
+        )}
+        {filter === "comments" && !hasNextCommentsPage && allComments.length > 0 && !commentsLoading && (
+          <p className="text-center text-xs text-gray-200 py-6">All comments loaded</p>
         )}
       </main>
 

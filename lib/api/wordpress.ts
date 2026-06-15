@@ -204,6 +204,42 @@ export interface WPComment {
   date: string;
   content: { rendered: string };
   status: string;
+  post: number;
+  link: string;
+  _embedded?: {
+    up?: Array<{ id: number; link: string; title: { rendered: string } }>;
+  };
+}
+
+export interface CommentsPage {
+  comments: WPComment[];
+  totalPages: number;
+  total: number;
+}
+
+export async function getMyComments(
+  cfg: WPConfig,
+  userId: number,
+  page = 1,
+  perPage = 20
+): Promise<CommentsPage> {
+  const params = new URLSearchParams({
+    author: String(userId),
+    per_page: String(perPage),
+    page: String(page),
+    orderby: "date",
+    order: "desc",
+    status: "any",
+    _embed: "up",
+  });
+  const res = await fetch(apiUrl(cfg, `/comments?${params}`), {
+    headers: { Authorization: authHeader(cfg) },
+  });
+  if (!res.ok) return { comments: [], totalPages: 1, total: 0 };
+  const totalPages = Number(res.headers.get("X-WP-TotalPages") ?? "1");
+  const total = Number(res.headers.get("X-WP-Total") ?? "0");
+  const comments = await res.json() as WPComment[];
+  return { comments, totalPages, total };
 }
 
 export async function getComments(cfg: WPConfig, postId: number): Promise<WPComment[]> {
