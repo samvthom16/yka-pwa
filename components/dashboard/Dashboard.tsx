@@ -11,7 +11,7 @@ import { getPosts, getPostCounts, getMe, deletePost, getMyComments } from "@/lib
 import type { WPPostListItem } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import WpImage from "@/components/ui/WpImage";
-import { Loader2, PenLine, RefreshCw, LogOut, Eye, MessageSquare, MoreVertical, Trash2, User } from "lucide-react";
+import { Loader2, PenLine, RefreshCw, LogOut, MessageSquare, MoreVertical, Trash2, User } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PER_PAGE = 20;
@@ -277,7 +277,6 @@ export default function Dashboard() {
           <ul className="divide-y divide-gray-100">
             {filtered.map((post) => {
               const title = stripHtml(post.title.rendered) || "Untitled";
-              const isPublished = post.status === "publish";
               const thumbnail = post.featured_image || null;
               const categories = post._embedded?.["wp:term"]
                 ?.find((group) => group[0]?.taxonomy === "category")
@@ -298,19 +297,10 @@ export default function Dashboard() {
 
                       {/* Date + stats */}
                       <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
-                        <span className={`inline-flex items-center gap-1 font-medium ${isPublished ? "text-green-600" : "text-gray-400"}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isPublished ? "bg-green-500" : "bg-gray-300"}`} />
-                          {isPublished ? "Published" : "Draft"}
-                        </span>
-                        <span className="text-gray-300">·</span>
                         <span>{formatDate(post.modified)}</span>
-                        <span className="flex items-center gap-0.5">
-                          <Eye size={11} />
-                          {post.view_count.toLocaleString()}
-                        </span>
-                        <span className="flex items-center gap-0.5">
+                        <span className="flex items-center gap-1">
                           <MessageSquare size={11} />
-                          {post.total_comments}
+                          {post.total_comments} comments
                         </span>
                       </div>
 

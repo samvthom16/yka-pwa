@@ -13,7 +13,7 @@ import LoginScreen from "@/components/auth/LoginScreen";
 import { createPost, updatePost, getPost, uploadMedia } from "@/lib/api/wordpress";
 import { useWpConfig } from "@/hooks/useWpConfig";
 import LoadingScreen from "@/components/ui/LoadingScreen";
-import type { PublishStatus } from "./EditorHeader";
+import type { PublishStatus, PublishTarget } from "./EditorHeader";
 
 const TipTapEditor = dynamic(() => import("./TipTapEditor"), {
   ssr: false,
@@ -75,6 +75,7 @@ export default function WritingApp({ postId }: { postId?: number }) {
 const [draftLoaded, setDraftLoaded] = useState(false);
   const [initialContent, setInitialContent] = useState<object | string | undefined>(undefined);
   const [publishStatus, setPublishStatus] = useState<PublishStatus>("idle");
+  const [publishTarget, setPublishTarget] = useState<PublishTarget>(null);
   const [publishError, setPublishError] = useState("");
 
   const { draft, saveDraft, clearDraft, isLoading } = useDraft("default");
@@ -217,25 +218,26 @@ const [draftLoaded, setDraftLoaded] = useState(false);
     triggerSave();
   }, [triggerSave]);
 
-  /* ── Publish to WordPress ─────────────────────────────────── */
-  const handlePublish = useCallback(async () => {
+  /* ── Publish / Save draft to WordPress ───────────────────────── */
+  const handlePublish = useCallback(async (targetStatus: "publish" | "draft") => {
     if (!user || !cfg) return;
 
     const html = editorRef.current?.getHTML() ?? "";
     const plainText = html.replace(/<[^>]*>/g, "").trim();
 
     if (!title.trim()) {
-      setPublishError("Please add a title before publishing.");
+      setPublishError("Please add a title before saving.");
       setPublishStatus("error");
       return;
     }
     if (!plainText) {
-      setPublishError("The article has no content. Write something before publishing.");
+      setPublishError("The article has no content. Write something before saving.");
       setPublishStatus("error");
       return;
     }
 
     setPublishStatus("publishing");
+    setPublishTarget(targetStatus);
     setPublishError("");
 
     try {
@@ -256,14 +258,14 @@ const [draftLoaded, setDraftLoaded] = useState(false);
         await updatePost(cfg, postId!, {
           title: title.trim(),
           content: uploadedHtml,
-          status: "publish",
+          status: targetStatus,
           ...(featuredMediaId !== undefined && { featured_media: featuredMediaId }),
         });
       } else {
         await createPost(cfg, {
           title: title.trim(),
           content: uploadedHtml,
-          status: "publish",
+          status: targetStatus,
           ...(featuredMediaId !== undefined && { featured_media: featuredMediaId }),
         });
         await clearDraft();
@@ -276,8 +278,9 @@ const [draftLoaded, setDraftLoaded] = useState(false);
       setPublishStatus("success");
       redirectTimerRef.current = setTimeout(() => router.push("/"), 1800);
     } catch (err) {
-      setPublishError(err instanceof Error ? err.message : "Publish failed. Try again.");
+      setPublishError(err instanceof Error ? err.message : "Save failed. Try again.");
       setPublishStatus("error");
+      setPublishTarget(null);
     }
   }, [user, cfg, title, thumbnail, editorRef, clearDraft, isEditMode, postId, queryClient]);
 
@@ -298,9 +301,10 @@ const [draftLoaded, setDraftLoaded] = useState(false);
         saveStatus={saveStatus}
         editorRef={editorRef}
         publishStatus={publishStatus}
+        publishTarget={publishTarget}
         publishError={publishError}
         onPublish={handlePublish}
-        onDismissPublish={() => setPublishStatus("idle")}
+        onDismissPublish={() => { setPublishStatus("idle"); setPublishTarget(null); }}
         onBack={() => router.push("/")}
       />
 
