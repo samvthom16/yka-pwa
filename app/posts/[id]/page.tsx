@@ -92,10 +92,10 @@ export default function PostPage() {
   async function handleDeleteComment(commentId: number) {
     if (!cfg) return;
     setDeletingId(commentId);
-    setConfirmDeleteId(null);
     try {
       await deleteComment(cfg, commentId);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setConfirmDeleteId(null);
     } catch {
       /* silent — comment stays in list */
     } finally {

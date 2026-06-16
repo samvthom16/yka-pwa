@@ -362,7 +362,7 @@ export default function Dashboard() {
       </main>
 
       {/* ── Post action bottom sheet ──────────────────────────────── */}
-      {activeMenu && (
+      {activeMenu && !deleteDialogOpen && (
         <BottomSheet onClose={() => setActiveMenu(null)}>
           <p className="px-5 pb-1 text-sm font-semibold text-gray-900 line-clamp-1">
             {stripHtml(activeMenu.title.rendered) || "Untitled"}
@@ -376,7 +376,7 @@ export default function Dashboard() {
               Edit article
             </button>
             <button
-              onClick={() => { setActiveMenu(null); setDeleteDialogOpen(true); }}
+              onClick={() => setDeleteDialogOpen(true)}
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
             >
               <Trash2 size={18} />
