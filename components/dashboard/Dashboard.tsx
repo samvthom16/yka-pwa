@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [activeMenu, setActiveMenu] = useState<WPPostListItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   /* Derive 2-letter monogram from display name or username */
@@ -83,7 +84,7 @@ export default function Dashboard() {
     fetchNextPage: fetchNextCommentsPage,
     hasNextPage: hasNextCommentsPage,
     isFetchingNextPage: isFetchingNextCommentsPage,
-    isLoading: commentsLoading,
+    isPending: commentsPending,
   } = useInfiniteQuery({
     queryKey: ["my-comments", authorId],
     queryFn: ({ pageParam = 1 }) =>
@@ -147,8 +148,8 @@ export default function Dashboard() {
       await queryClient.invalidateQueries({ queryKey: ["post-counts"] });
       setDeleteDialogOpen(false);
       setActiveMenu(null);
-    } catch {
-      /* silently ignore — user can retry */
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete. Please try again.");
     } finally {
       setIsDeleting(false);
     }
@@ -341,7 +342,7 @@ export default function Dashboard() {
 
         {/* Comments tab */}
         {filter === "comments" && (
-          <CommentsTab data={commentsData} isLoading={commentsLoading} />
+          <CommentsTab data={commentsData} isLoading={commentsPending} />
         )}
 
         {/* Sentinel — triggers next page */}
@@ -356,7 +357,7 @@ export default function Dashboard() {
         {filter !== "comments" && !hasNextPage && allPosts.length > 0 && !isInitialLoad && (
           <p className="text-center text-xs text-gray-200 py-6">All articles loaded</p>
         )}
-        {filter === "comments" && !hasNextCommentsPage && commentTotal > 0 && !commentsLoading && (
+        {filter === "comments" && !hasNextCommentsPage && commentTotal > 0 && !commentsPending && (
           <p className="text-center text-xs text-gray-200 py-6">All comments loaded</p>
         )}
       </main>
@@ -390,13 +391,13 @@ export default function Dashboard() {
       <ConfirmDialog
         open={deleteDialogOpen}
         title="Delete article?"
-        message="This will permanently delete the article. This cannot be undone."
+        message={deleteError || "This will permanently delete the article. This cannot be undone."}
         confirmLabel="Delete"
         loadingLabel="Deleting…"
         loading={isDeleting}
         destructive
         onConfirm={handleDelete}
-        onCancel={() => { setDeleteDialogOpen(false); setActiveMenu(null); }}
+        onCancel={() => { setDeleteDialogOpen(false); setActiveMenu(null); setDeleteError(""); }}
       />
 
       {/* ── User account bottom sheet ─────────────────────────────── */}

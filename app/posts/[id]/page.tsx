@@ -30,6 +30,7 @@ export default function PostPage() {
   const [commentError, setCommentError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [deleteCommentError, setDeleteCommentError] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -96,8 +97,8 @@ export default function PostPage() {
       await deleteComment(cfg, commentId);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
       setConfirmDeleteId(null);
-    } catch {
-      /* silent — comment stays in list */
+    } catch (err) {
+      setDeleteCommentError(err instanceof Error ? err.message : "Failed to delete. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -334,13 +335,13 @@ export default function PostPage() {
           <ConfirmDialog
             open={confirmDeleteId !== null}
             title="Delete comment?"
-            message="This cannot be undone."
+            message={deleteCommentError || "This cannot be undone."}
             confirmLabel="Delete"
             loadingLabel="Deleting…"
             loading={deletingId !== null && deletingId === confirmDeleteId}
             destructive
             onConfirm={() => handleDeleteComment(confirmDeleteId!)}
-            onCancel={() => setConfirmDeleteId(null)}
+            onCancel={() => { setConfirmDeleteId(null); setDeleteCommentError(""); }}
           />
         </section>
       </article>
