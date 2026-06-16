@@ -280,11 +280,7 @@ export default function Dashboard() {
               const thumbnail = post.featured_image || null;
               const allTerms = post._embedded?.["wp:term"]
                 ?.find((group) => group[0]?.taxonomy === "category") ?? [];
-              const EDITORIAL = new Set(["Unreviewed"]);
-              const editorialTags = allTerms.filter((t) => EDITORIAL.has(t.name));
-              const contentCategories = allTerms.filter(
-                (t) => !EDITORIAL.has(t.name) && t.name !== "Uncategorized"
-              );
+              const contentCategories = allTerms.filter((t) => t.name !== "Uncategorized");
               const excerpt = !thumbnail
                 ? stripHtml(post.excerpt.rendered).slice(0, 100).trim()
                 : null;
@@ -314,9 +310,6 @@ export default function Dashboard() {
                           <MessageSquare size={11} />
                           {post.total_comments} {post.total_comments === 1 ? "comment" : "comments"}
                         </span>
-                        {editorialTags.map((t) => (
-                          <span key={t.id} className="text-gray-400">· {t.name}</span>
-                        ))}
                       </div>
 
                       {/* Content category badges */}
