@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
+import { blocklistMap } from "@/lib/titleCaseBlocklist";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
@@ -172,8 +173,11 @@ const [draftLoaded, setDraftLoaded] = useState(false);
 
   const handleTitleChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      // Negative lookbehind skips letters after apostrophes (contractions like "I'm", "don't")
-      const val = e.target.value.replace(/(?<!['’])\b\w/g, (c) => c.toUpperCase());
+      // Title case: capitalise first letter of each word; preserve blocklist casing (e.g. iPhone)
+      const val = e.target.value.replace(
+        /[a-zA-Z]+(?:[‘’’][a-zA-Z]+)*/g,
+        (word) => blocklistMap.get(word.toLowerCase()) ?? (word.charAt(0).toUpperCase() + word.slice(1))
+      );
       setTitle(val);
       latestTitle.current = val;
       triggerSave();
