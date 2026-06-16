@@ -347,7 +347,7 @@ export default function Dashboard() {
                     {isPostEditable(post) && (
                       <button
                         onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
-                        className="flex-shrink-0 w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -mr-2 mt-0.5"
+                        className="flex-shrink-0 w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -ml-2 -mr-2 mt-0.5"
                       >
                         <MoreVertical size={17} />
                       </button>
