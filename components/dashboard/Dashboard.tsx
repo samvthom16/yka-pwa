@@ -328,13 +328,15 @@ export default function Dashboard() {
                       </button>
                     )}
 
-                    {/* 3-dot action menu */}
-                    <button
-                      onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
-                      className="flex-shrink-0 w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -mr-2 mt-0.5"
-                    >
-                      <MoreVertical size={17} />
-                    </button>
+                    {/* 3-dot action menu — only for editable posts */}
+                    {isPostEditable(post) && (
+                      <button
+                        onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
+                        className="flex-shrink-0 w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -mr-2 mt-0.5"
+                      >
+                        <MoreVertical size={17} />
+                      </button>
+                    )}
 
                   </div>
                 </li>
@@ -468,15 +470,13 @@ export default function Dashboard() {
               ) : (
                 /* ── Actions ─────────────────────────────────── */
                 <>
-                  {isPostEditable(activeMenu) && (
-                    <button
-                      onClick={() => { router.push(`/write?id=${activeMenu.id}`); closeMenu(); }}
-                      className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
-                    >
-                      <PenLine size={18} className="text-gray-500" />
-                      Edit article
-                    </button>
-                  )}
+                  <button
+                    onClick={() => { router.push(`/write?id=${activeMenu.id}`); closeMenu(); }}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+                  >
+                    <PenLine size={18} className="text-gray-500" />
+                    Edit article
+                  </button>
                   <button
                     onClick={() => setDeleteConfirm(true)}
                     className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
