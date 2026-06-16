@@ -3,6 +3,8 @@
 import { useState, useRef } from "react";
 import { sendOtp, verifyOtp } from "@/lib/api/auth";
 import type { WPUser } from "@/lib/api/auth";
+import { getMe } from "@/lib/api/wordpress";
+import { WP_SITE_URL } from "@/lib/wp-config";
 
 interface Props {
   onLogin: (user: WPUser) => void;
@@ -41,7 +43,12 @@ export default function LoginScreen({ onLogin }: Props) {
     setLoading(true);
     try {
       const user = await verifyOtp(email.trim(), otp.trim());
-      onLogin(user);
+      try {
+        const me = await getMe({ siteUrl: WP_SITE_URL, username: user.username, appPassword: user.password });
+        onLogin({ ...user, id: me.id });
+      } catch {
+        onLogin(user);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid OTP. Try again.");
     } finally {

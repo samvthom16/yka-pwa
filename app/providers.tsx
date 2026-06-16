@@ -12,7 +12,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             staleTime: 1000 * 60,       // 60s — show cache instantly, revalidate after
             gcTime: 1000 * 60 * 10,     // keep unused cache for 10 min
             retry: 1,
-            refetchOnWindowFocus: true,  // silently refresh when tab regains focus
+            refetchOnWindowFocus: false,
           },
         },
       })

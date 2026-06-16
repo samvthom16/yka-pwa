@@ -10,6 +10,7 @@ export interface WPUser {
   name: string;
   username: string;
   password: string;
+  id?: number;
 }
 
 export async function sendOtp(email: string): Promise<void> {
