@@ -278,9 +278,16 @@ export default function Dashboard() {
             {filtered.map((post) => {
               const title = stripHtml(post.title.rendered) || "Untitled";
               const thumbnail = post.featured_image || null;
-              const categories = post._embedded?.["wp:term"]
-                ?.find((group) => group[0]?.taxonomy === "category")
-                ?.filter((t) => t.name !== "Uncategorized") ?? [];
+              const allTerms = post._embedded?.["wp:term"]
+                ?.find((group) => group[0]?.taxonomy === "category") ?? [];
+              const EDITORIAL = new Set(["Unlisted", "Unreviewed", "Staff Picks"]);
+              const editorialTags = allTerms.filter((t) => EDITORIAL.has(t.name));
+              const contentCategories = allTerms.filter(
+                (t) => !EDITORIAL.has(t.name) && t.name !== "Uncategorized"
+              );
+              const excerpt = !thumbnail
+                ? stripHtml(post.excerpt.rendered).slice(0, 100).trim()
+                : null;
 
               return (
                 <li key={post.id}>
@@ -295,26 +302,34 @@ export default function Dashboard() {
                         {title}
                       </p>
 
-                      {/* Date + stats */}
-                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+                      {/* Excerpt — only when no thumbnail */}
+                      {excerpt && (
+                        <p className="mt-1 text-xs text-gray-400 line-clamp-1">{excerpt}</p>
+                      )}
+
+                      {/* Date + stats + editorial status */}
+                      <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-400">
                         <span>{formatDate(post.modified)}</span>
                         <span className="flex items-center gap-1">
                           <MessageSquare size={11} />
-                          {post.total_comments} comments
+                          {post.total_comments} {post.total_comments === 1 ? "comment" : "comments"}
                         </span>
+                        {editorialTags.map((t) => (
+                          <span key={t.id} className="text-gray-400">· {t.name}</span>
+                        ))}
                       </div>
 
-                      {/* Category badges */}
-                      {categories.length > 0 && (
+                      {/* Content category badges */}
+                      {contentCategories.length > 0 && (
                         <div className="mt-1.5 flex items-center gap-1">
-                          {categories.slice(0, 2).map((cat) => (
+                          {contentCategories.slice(0, 2).map((cat) => (
                             <span key={cat.id} className="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">
                               {cat.name}
                             </span>
                           ))}
-                          {categories.length > 2 && (
+                          {contentCategories.length > 2 && (
                             <span className="text-[11px] text-gray-400 font-medium">
-                              +{categories.length - 2}
+                              +{contentCategories.length - 2}
                             </span>
                           )}
                         </div>
@@ -324,7 +339,7 @@ export default function Dashboard() {
                     {/* Thumbnail — tapping navigates to post view */}
                     {thumbnail && (
                       <button onClick={() => router.push(`/posts/${post.id}`)} className="flex-shrink-0">
-                        <WpImage src={thumbnail} className="w-20 h-20 rounded-xl object-cover" />
+                        <WpImage src={thumbnail} className="w-24 h-16 rounded-xl object-cover" />
                       </button>
                     )}
 
