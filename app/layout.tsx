@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
+import OfflineBanner from "@/components/ui/OfflineBanner";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -16,6 +17,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: "YKA Editor",
+    startupImage: "/apple-touch-icon.png",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -35,6 +40,7 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable} h-full`}>
       <body className="h-full bg-white antialiased">
         <Providers>{children}</Providers>
+        <OfflineBanner />
       </body>
     </html>
   );
