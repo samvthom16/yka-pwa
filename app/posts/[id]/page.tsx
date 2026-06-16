@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DOMPurify from "dompurify";
+import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { useWpConfig } from "@/hooks/useWpConfig";
 import LoadingScreen from "@/components/ui/LoadingScreen";
 import BottomSheet from "@/components/ui/BottomSheet";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { IconButton, IconButtonLink } from "@/components/ui/IconButton";
-import { getPost, getComments, createComment, updateComment, deleteComment, getMe } from "@/lib/api/wordpress";
+import { getPost, getComments, createComment, updateComment, deleteComment } from "@/lib/api/wordpress";
 import type { WPPostListItem, WPComment } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import { ArrowLeft, ExternalLink, Eye, MessageSquare, ThumbsUp, Share2, MoreVertical } from "lucide-react";
@@ -21,7 +22,6 @@ export default function PostPage() {
   const cfg = useWpConfig(user);
 
   const [post, setPost] = useState<WPPostListItem | null>(null);
-  const [myWpId, setMyWpId] = useState<number | null>(null);
   const [comments, setComments] = useState<WPComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -36,6 +36,7 @@ export default function PostPage() {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [canShare, setCanShare] = useState(false);
   const [activeCommentMenu, setActiveCommentMenu] = useState<number | null>(null);
+  const myWpId = user?.id ?? null;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -50,9 +51,8 @@ export default function PostPage() {
     Promise.all([
       getPost(cfg, postId),
       getComments(cfg, postId),
-      getMe(cfg),
     ])
-      .then(([p, c, me]) => { setPost(p); setComments(c); setMyWpId(me.id); })
+      .then(([p, c]) => { setPost(p); setComments(c); })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load article."))
       .finally(() => setLoading(false));
   }, [id, cfg, authLoading, router]);
@@ -131,7 +131,6 @@ export default function PostPage() {
     }
   }
   const safeContent = DOMPurify.sanitize(post.content.rendered);
-  const srcset = post.featured_image_srcset?.join(", ") || undefined;
 
   return (
     <div className="min-h-dvh bg-white">
@@ -195,13 +194,14 @@ export default function PostPage() {
           </div>
         </div>
         {post.featured_image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={post.featured_image}
-            srcSet={srcset}
-            sizes="(max-width: 720px) 100vw, 720px"
             alt={title}
+            width={720}
+            height={400}
+            sizes="(max-width: 720px) 100vw, 720px"
             className="w-full rounded-xl object-cover max-h-[400px] mb-10"
+            priority
           />
         )}
         <div className="ProseMirror reader" dangerouslySetInnerHTML={{ __html: safeContent }} />
@@ -241,11 +241,12 @@ export default function PostPage() {
             <ul className="space-y-6">
               {comments.map((c) => (
                 <li key={c.id} className={`flex gap-3 ${c.parent !== 0 ? "ml-6 sm:ml-10" : ""}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={c.author_avatar_urls["48"] ?? c.author_avatar_urls["96"]}
                     alt={c.author_name}
-                    className="w-10 h-10 rounded-full flex-shrink-0 bg-gray-100"
+                    width={40}
+                    height={40}
+                    className="rounded-full flex-shrink-0 bg-gray-100"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">

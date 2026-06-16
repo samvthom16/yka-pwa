@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface WpImageProps {
   src: string;
   auth?: string;
@@ -5,7 +7,14 @@ interface WpImageProps {
   alt?: string;
 }
 
-// eslint-disable-next-line @next/next/no-img-element
 export default function WpImage({ src, className, alt = "" }: WpImageProps) {
-  return <img src={src} alt={alt} className={className} />;
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={192}
+      height={128}
+      className={className}
+    />
+  );
 }

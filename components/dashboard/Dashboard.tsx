@@ -49,7 +49,7 @@ export default function Dashboard() {
     staleTime: Infinity,
   });
 
-  const authorId = me?.id;
+  const authorId = user?.id ?? me?.id;
 
   /* ── Posts (infinite) ────────────────────────────────────────── */
   const {
