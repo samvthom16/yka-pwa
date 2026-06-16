@@ -83,11 +83,6 @@ const [draftLoaded, setDraftLoaded] = useState(false);
 
   const { draft, saveDraft, clearDraft, isLoading } = useDraft("default");
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => {
-    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
-  }, []);
 
   /* Refs hold latest values so the debounced callback never captures stale state */
   const latestTitle = useRef("");
@@ -289,8 +284,7 @@ const [draftLoaded, setDraftLoaded] = useState(false);
       await queryClient.invalidateQueries({ queryKey: ["posts"] });
       await queryClient.invalidateQueries({ queryKey: ["post-counts"] });
 
-      setPublishStatus("success");
-      redirectTimerRef.current = setTimeout(() => router.push("/"), 1800);
+      router.push("/");
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Save failed. Try again.");
       setPublishStatus("error");

@@ -280,15 +280,7 @@ export default function Dashboard() {
               const thumbnail = post.featured_image || null;
               const allTerms = post._embedded?.["wp:term"]
                 ?.find((group) => group[0]?.taxonomy === "category") ?? [];
-              const EDITORIAL = new Set(["Unlisted", "Unreviewed"]);
-              const rawEditorial = allTerms.filter((t) => EDITORIAL.has(t.name));
-              const hasUnreviewed = rawEditorial.some((t) => t.name === "Unreviewed");
-              const editorialTags = hasUnreviewed
-                ? rawEditorial.filter((t) => t.name === "Unreviewed")
-                : rawEditorial;
-              const contentCategories = allTerms.filter(
-                (t) => !EDITORIAL.has(t.name) && t.name !== "Uncategorized"
-              );
+              const contentCategories = allTerms.filter((t) => t.name !== "Uncategorized");
               const excerpt = !thumbnail
                 ? stripHtml(post.excerpt.rendered).slice(0, 100).trim()
                 : null;
@@ -318,9 +310,6 @@ export default function Dashboard() {
                           <MessageSquare size={11} />
                           {post.total_comments} {post.total_comments === 1 ? "comment" : "comments"}
                         </span>
-                        {editorialTags.map((t) => (
-                          <span key={t.id} className="text-gray-400">· {t.name}</span>
-                        ))}
                       </div>
 
                       {/* Content category badges */}
@@ -340,22 +329,22 @@ export default function Dashboard() {
                       )}
                     </button>
 
-                    {/* Thumbnail — tapping navigates to post view */}
-                    {thumbnail && (
-                      <button onClick={() => router.push(`/posts/${post.id}`)} className="flex-shrink-0">
-                        <WpImage src={thumbnail} className="w-24 h-16 rounded-xl object-cover" />
-                      </button>
-                    )}
-
-                    {/* 3-dot action menu — only for editable posts */}
-                    {isPostEditable(post) && (
-                      <button
-                        onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
-                        className="flex-shrink-0 w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -mr-2 mt-0.5"
-                      >
-                        <MoreVertical size={17} />
-                      </button>
-                    )}
+                    {/* Thumbnail + action menu grouped tightly */}
+                    <div className="flex items-start gap-1 flex-shrink-0">
+                      {thumbnail && (
+                        <button onClick={() => router.push(`/posts/${post.id}`)}>
+                          <WpImage src={thumbnail} className="w-24 h-16 rounded-xl object-cover" />
+                        </button>
+                      )}
+                      {isPostEditable(post) && (
+                        <button
+                          onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
+                          className="w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -mr-2 mt-0.5"
+                        >
+                          <MoreVertical size={17} />
+                        </button>
+                      )}
+                    </div>
 
                   </div>
                 </li>
