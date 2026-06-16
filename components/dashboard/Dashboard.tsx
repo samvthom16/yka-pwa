@@ -281,7 +281,11 @@ export default function Dashboard() {
               const allTerms = post._embedded?.["wp:term"]
                 ?.find((group) => group[0]?.taxonomy === "category") ?? [];
               const EDITORIAL = new Set(["Unlisted", "Unreviewed"]);
-              const editorialTags = allTerms.filter((t) => EDITORIAL.has(t.name));
+              const rawEditorial = allTerms.filter((t) => EDITORIAL.has(t.name));
+              const hasUnreviewed = rawEditorial.some((t) => t.name === "Unreviewed");
+              const editorialTags = hasUnreviewed
+                ? rawEditorial.filter((t) => t.name === "Unreviewed")
+                : rawEditorial;
               const contentCategories = allTerms.filter(
                 (t) => !EDITORIAL.has(t.name) && t.name !== "Uncategorized"
               );
