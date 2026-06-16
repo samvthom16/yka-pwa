@@ -296,11 +296,11 @@ export default function Dashboard() {
                       </p>
 
                       {/* Date + stats */}
-                      <div className="mt-1.5 flex items-center gap-1.5 text-xs text-gray-400">
+                      <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-400">
                         <span>{formatDate(post.modified)}</span>
                         <span className="flex items-center gap-1">
                           <MessageSquare size={11} />
-                          {post.total_comments} comments
+                          {post.total_comments} {post.total_comments === 1 ? "comment" : "comments"}
                         </span>
                       </div>
 
