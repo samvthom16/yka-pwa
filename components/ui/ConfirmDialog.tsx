@@ -22,7 +22,7 @@ export default function ConfirmDialog({
   destructive?: boolean;
   loading?: boolean;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
   zIndex?: string;
 }) {
   if (!open) return null;
@@ -32,12 +32,14 @@ export default function ConfirmDialog({
         <h2 className="text-base font-semibold text-gray-900 mb-2">{title}</h2>
         <p className="text-sm text-gray-500 mb-5">{message}</p>
         <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="flex-1 text-sm font-medium text-gray-700 border border-gray-200 py-2.5 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
-          >
-            {cancelLabel}
-          </button>
+          {cancelLabel && onCancel && (
+            <button
+              onClick={onCancel}
+              className="flex-1 text-sm font-medium text-gray-700 border border-gray-200 py-2.5 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
+            >
+              {cancelLabel}
+            </button>
+          )}
           <button
             onClick={onConfirm}
             disabled={loading}

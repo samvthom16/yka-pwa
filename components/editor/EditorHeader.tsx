@@ -3,6 +3,7 @@
 import { RefObject, useCallback, useState } from "react";
 import { Eye, Upload, Check, Loader2, ArrowLeft, X } from "lucide-react";
 import { IconButton } from "@/components/ui/IconButton";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import type { TipTapEditorHandle } from "./TipTapEditor";
 
 export type PublishStatus = "idle" | "publishing" | "success" | "error";
@@ -22,36 +23,6 @@ interface EditorHeaderProps {
   onBack: () => void;
 }
 
-/* ── Minimal icon button ──────────────────────────────────────── */
-function IconBtn({
-  onClick,
-  title,
-  active,
-  children,
-}: {
-  onClick?: () => void;
-  title: string;
-  active?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      title={title}
-      className={`
-        flex items-center justify-center w-11 h-11 rounded-lg transition-colors
-        ${
-          active
-            ? "bg-gray-900 text-white"
-            : "text-gray-400 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700"
-        }
-      `}
-    >
-      {children}
-    </button>
-  );
-}
-
 /* ── Preview modal ────────────────────────────────────────────── */
 function PreviewModal({
   title,
@@ -66,7 +37,6 @@ function PreviewModal({
 }) {
   return (
     <div className="fixed inset-0 z-[300] bg-white flex flex-col">
-      {/* Header — mirrors reading page */}
       <div className="safe-top sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
           <IconButton onClick={onClose}>
@@ -77,7 +47,6 @@ function PreviewModal({
         </div>
       </div>
 
-      {/* Article content — same layout as reading page */}
       <div className="flex-1 overflow-y-auto overscroll-contain">
         <article className="w-full max-w-[720px] mx-auto px-6 py-12 md:px-8">
           <h1
@@ -113,35 +82,6 @@ function PublishingOverlay({ target }: { target: PublishTarget }) {
   );
 }
 
-/* ── Publish error modal ──────────────────────────────────────── */
-function PublishModal({
-  status,
-  error,
-  onClose,
-}: {
-  status: PublishStatus;
-  error: string;
-  onClose: () => void;
-}) {
-  if (status !== "error") return null;
-  return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-            <span className="text-red-600 text-sm font-bold">!</span>
-          </div>
-          <h2 className="text-base font-semibold text-gray-900">Publish failed</h2>
-        </div>
-        <p className="text-sm text-gray-500 mb-4 break-words">{error}</p>
-        <button onClick={onClose} className="w-full text-sm font-medium text-white bg-gray-900 hover:bg-gray-700 active:bg-gray-800 py-2.5 rounded-lg transition-colors">
-          OK
-        </button>
-      </div>
-    </div>
-  );
-}
-
 /* ── Main header ─────────────────────────────────────────────── */
 export default function EditorHeader({
   title,
@@ -169,74 +109,68 @@ export default function EditorHeader({
     <>
       <header className="safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
-        {/* ── Left: back + brand + title ─────────────────────── */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <IconButton onClick={onBack} title="Back to dashboard">
-            <ArrowLeft size={15} />
-          </IconButton>
-          {title && (
-            <span className="text-sm text-gray-400 truncate max-w-[220px] hidden sm:block">
-              {title}
-            </span>
-          )}
-        </div>
-
-        {/* ── Right: actions ─────────────────────────────────── */}
-        <div className="flex items-center gap-0.5">
-          {/* Save status */}
-          <div className="flex items-center gap-1.5 mr-2">
-            {saveStatus === "saving" && (
-              <span className="flex items-center gap-1 text-xs text-gray-400">
-                <Loader2 size={11} className="animate-spin" />
-                Saving
-              </span>
-            )}
-            {saveStatus === "saved" && (
-              <span className="flex items-center gap-1 text-xs text-green-500">
-                <Check size={11} />
-                Saved
+          <div className="flex items-center gap-2.5 min-w-0">
+            <IconButton onClick={onBack} title="Back to dashboard">
+              <ArrowLeft size={15} />
+            </IconButton>
+            {title && (
+              <span className="text-sm text-gray-400 truncate max-w-[220px] hidden sm:block">
+                {title}
               </span>
             )}
           </div>
 
-          <IconBtn title="Preview" onClick={handlePreview}>
-            <Eye size={15} />
-          </IconBtn>
+          <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1.5 mr-2">
+              {saveStatus === "saving" && (
+                <span className="flex items-center gap-1 text-xs text-gray-400">
+                  <Loader2 size={11} className="animate-spin" />
+                  Saving
+                </span>
+              )}
+              {saveStatus === "saved" && (
+                <span className="flex items-center gap-1 text-xs text-green-500">
+                  <Check size={11} />
+                  Saved
+                </span>
+              )}
+            </div>
 
-          {/* Save as draft button */}
-          <button
-            onClick={() => onPublish("draft")}
-            disabled={publishStatus === "publishing"}
-            className="flex items-center gap-1.5 ml-1 px-3 h-9 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {publishStatus === "publishing" && publishTarget === "draft" ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : null}
-            <span>{publishStatus === "publishing" && publishTarget === "draft" ? "Saving…" : "Draft"}</span>
-          </button>
+            <IconButton onClick={handlePreview} title="Preview">
+              <Eye size={15} />
+            </IconButton>
 
-          {/* Publish button */}
-          <button
-            onClick={() => onPublish("publish")}
-            disabled={publishStatus === "publishing"}
-            className="flex items-center gap-1.5 ml-1 pl-4 pr-4 h-9 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {publishStatus === "publishing" && publishTarget === "publish" ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <Upload size={13} />
-            )}
-            <span>
-              {publishStatus === "publishing" && publishTarget === "publish"
-                ? isEditMode ? "Updating…" : "Publishing…"
-                : isEditMode ? "Update" : "Publish"}
-            </span>
-          </button>
-        </div>
+            <button
+              onClick={() => onPublish("draft")}
+              disabled={publishStatus === "publishing"}
+              className="flex items-center gap-1.5 ml-1 px-3 h-9 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-100 active:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {publishStatus === "publishing" && publishTarget === "draft" ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : null}
+              <span>{publishStatus === "publishing" && publishTarget === "draft" ? "Saving…" : "Draft"}</span>
+            </button>
+
+            <button
+              onClick={() => onPublish("publish")}
+              disabled={publishStatus === "publishing"}
+              className="flex items-center gap-1.5 ml-1 pl-4 pr-4 h-9 rounded-lg text-sm font-medium bg-gray-900 text-white hover:bg-gray-700 active:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {publishStatus === "publishing" && publishTarget === "publish" ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Upload size={13} />
+              )}
+              <span>
+                {publishStatus === "publishing" && publishTarget === "publish"
+                  ? isEditMode ? "Updating…" : "Publishing…"
+                  : isEditMode ? "Update" : "Publish"}
+              </span>
+            </button>
+          </div>
         </div>
       </header>
 
-      {/* Preview modal */}
       {showPreview && (
         <PreviewModal
           title={title}
@@ -246,14 +180,16 @@ export default function EditorHeader({
         />
       )}
 
-      {/* Publishing overlay */}
       {publishStatus === "publishing" && <PublishingOverlay target={publishTarget} />}
 
-      {/* Publish error modal */}
-      <PublishModal
-        status={publishStatus}
-        error={publishError}
-        onClose={onDismissPublish}
+      <ConfirmDialog
+        open={publishStatus === "error"}
+        title="Publish failed"
+        message={publishError}
+        confirmLabel="OK"
+        cancelLabel={undefined}
+        zIndex="z-[400]"
+        onConfirm={onDismissPublish}
       />
     </>
   );
