@@ -6,6 +6,9 @@ import DOMPurify from "dompurify";
 import { useAuth } from "@/hooks/useAuth";
 import { useWpConfig } from "@/hooks/useWpConfig";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import BottomSheet from "@/components/ui/BottomSheet";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { IconButton, IconButtonLink } from "@/components/ui/IconButton";
 import { getPost, getComments, createComment, updateComment, deleteComment, getMe } from "@/lib/api/wordpress";
 import type { WPPostListItem, WPComment } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
@@ -53,10 +56,8 @@ export default function PostPage() {
       .finally(() => setLoading(false));
   }, [id, cfg, authLoading, router]);
 
-  /* ── Loading ─────────────────────────────────────────────────── */
   if (authLoading || loading) return <LoadingScreen />;
 
-  /* ── Error ───────────────────────────────────────────────────── */
   if (error || !post) {
     return (
       <div className="min-h-dvh bg-white flex flex-col items-center justify-center gap-4">
@@ -125,23 +126,19 @@ export default function PostPage() {
     try {
       await navigator.share({ title, url: post!.link });
     } catch {
-      /* user cancelled or share unavailable — no action needed */
+      /* user cancelled or share unavailable */
     }
   }
   const safeContent = DOMPurify.sanitize(post.content.rendered);
   const srcset = post.featured_image_srcset?.join(", ") || undefined;
 
-  /* ── Reader ──────────────────────────────────────────────────── */
   return (
     <div className="min-h-dvh bg-white">
       <header className="safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
-          <button
-            onClick={() => router.push("/")}
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
-          >
+          <IconButton onClick={() => router.push("/")}>
             <ArrowLeft size={15} />
-          </button>
+          </IconButton>
 
           <div className="flex items-center gap-1">
             <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${isPublished ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"}`}>
@@ -158,15 +155,14 @@ export default function PostPage() {
               </button>
             )}
             {isPublished && (
-              <a
+              <IconButtonLink
                 href={post.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="View on site"
-                className="flex items-center justify-center w-11 h-11 rounded-lg text-gray-400 active:bg-gray-100 active:text-gray-700 transition-colors"
               >
                 <ExternalLink size={14} />
-              </a>
+              </IconButtonLink>
             )}
           </div>
         </div>
@@ -217,7 +213,6 @@ export default function PostPage() {
               : `${comments.length} comment${comments.length === 1 ? "" : "s"}`}
           </h2>
 
-          {/* Add comment form */}
           <form onSubmit={handleCommentSubmit} className="mb-10">
             <textarea
               ref={textareaRef}
@@ -252,7 +247,6 @@ export default function PostPage() {
                     className="w-10 h-10 rounded-full flex-shrink-0 bg-gray-100"
                   />
                   <div className="flex-1 min-w-0">
-                    {/* Author row */}
                     <div className="flex items-center justify-between gap-2">
                       <div>
                         <span className="text-sm font-medium text-gray-900">{c.author_name}</span>
@@ -263,7 +257,6 @@ export default function PostPage() {
                           )}
                         </div>
                       </div>
-                      {/* ⋮ only on own comments */}
                       {c.author === myWpId && editingId !== c.id && (
                         <button
                           onClick={() => setActiveCommentMenu(activeCommentMenu === c.id ? null : c.id)}
@@ -274,7 +267,6 @@ export default function PostPage() {
                       )}
                     </div>
 
-                    {/* Comment body with left border */}
                     {editingId === c.id ? (
                       <div className="mt-2">
                         <textarea
@@ -313,63 +305,43 @@ export default function PostPage() {
 
           {/* Comment action bottom sheet */}
           {activeCommentMenu !== null && (
-            <div className="fixed inset-0 z-50 flex items-end" onClick={() => setActiveCommentMenu(null)}>
-              <div className="absolute inset-0 bg-black/30" />
-              <div
-                className="relative w-full bg-white rounded-t-2xl shadow-xl pb-safe"
-                onClick={(e) => e.stopPropagation()}
-                style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}
-              >
-                <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mt-3 mb-4" />
-                <div className="px-3 pb-2">
-                  <button
-                    onClick={() => {
-                      const c = comments.find((x) => x.id === activeCommentMenu);
-                      if (c) startEditing(c);
-                      setActiveCommentMenu(null);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
-                  >
-                    Edit comment
-                  </button>
-                  <button
-                    onClick={() => {
-                      setConfirmDeleteId(activeCommentMenu);
-                      setActiveCommentMenu(null);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
-                  >
-                    Delete comment
-                  </button>
-                </div>
+            <BottomSheet onClose={() => setActiveCommentMenu(null)}>
+              <div className="px-3 pb-2">
+                <button
+                  onClick={() => {
+                    const c = comments.find((x) => x.id === activeCommentMenu);
+                    if (c) startEditing(c);
+                    setActiveCommentMenu(null);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+                >
+                  Edit comment
+                </button>
+                <button
+                  onClick={() => {
+                    setConfirmDeleteId(activeCommentMenu);
+                    setActiveCommentMenu(null);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
+                >
+                  Delete comment
+                </button>
               </div>
-            </div>
+            </BottomSheet>
           )}
 
           {/* Delete confirmation */}
-          {confirmDeleteId !== null && (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-              <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
-                <h2 className="text-base font-semibold text-gray-900 mb-2">Delete comment?</h2>
-                <p className="text-sm text-gray-500 mb-5">This cannot be undone.</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setConfirmDeleteId(null)}
-                    className="flex-1 text-sm font-medium text-gray-700 border border-gray-200 py-2.5 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => handleDeleteComment(confirmDeleteId)}
-                    disabled={deletingId === confirmDeleteId}
-                    className="flex-1 text-sm font-medium text-white bg-red-500 py-2.5 rounded-lg hover:bg-red-600 active:bg-red-700 disabled:opacity-40 transition-colors"
-                  >
-                    {deletingId === confirmDeleteId ? "Deleting…" : "Delete"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          <ConfirmDialog
+            open={confirmDeleteId !== null}
+            title="Delete comment?"
+            message="This cannot be undone."
+            confirmLabel="Delete"
+            loadingLabel="Deleting…"
+            loading={deletingId !== null && deletingId === confirmDeleteId}
+            destructive
+            onConfirm={() => handleDeleteComment(confirmDeleteId!)}
+            onCancel={() => setConfirmDeleteId(null)}
+          />
         </section>
       </article>
     </div>

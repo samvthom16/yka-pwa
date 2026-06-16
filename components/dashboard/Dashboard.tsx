@@ -2,17 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useWpConfig } from "@/hooks/useWpConfig";
 import LoginScreen from "@/components/auth/LoginScreen";
 import LoadingScreen from "@/components/ui/LoadingScreen";
+import BottomSheet from "@/components/ui/BottomSheet";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import CommentsTab from "@/components/dashboard/CommentsTab";
 import { getPosts, getPostCounts, getMe, deletePost, getMyComments } from "@/lib/api/wordpress";
 import type { WPPostListItem } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import WpImage from "@/components/ui/WpImage";
 import { Loader2, PenLine, RefreshCw, LogOut, MessageSquare, MoreVertical, Trash2, User } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 
 const PER_PAGE = 20;
 
@@ -26,7 +28,7 @@ export default function Dashboard() {
   const [filter, setFilter] = useState<Filter>("publish");
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [activeMenu, setActiveMenu] = useState<WPPostListItem | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -124,7 +126,6 @@ export default function Dashboard() {
     return false;
   });
 
-  const allComments = commentsData?.pages.flatMap((p) => p.comments) ?? [];
   const commentTotal = commentsData?.pages[0]?.total ?? 0;
 
   const isInitialLoad = postsLoading && allPosts.length === 0;
@@ -137,11 +138,6 @@ export default function Dashboard() {
     return post.status === "draft" || cats.some((n) => ["Unlisted", "Unreviewed"].includes(n));
   }
 
-  function closeMenu() {
-    setActiveMenu(null);
-    setDeleteConfirm(false);
-  }
-
   async function handleDelete() {
     if (!cfg || !activeMenu) return;
     setIsDeleting(true);
@@ -149,7 +145,8 @@ export default function Dashboard() {
       await deletePost(cfg, activeMenu.id);
       await queryClient.invalidateQueries({ queryKey: ["posts"] });
       await queryClient.invalidateQueries({ queryKey: ["post-counts"] });
-      closeMenu();
+      setDeleteDialogOpen(false);
+      setActiveMenu(null);
     } catch {
       /* silently ignore — user can retry */
     } finally {
@@ -194,7 +191,6 @@ export default function Dashboard() {
               <PenLine size={14} />
               <span>Write</span>
             </button>
-            {/* User monogram — opens account menu */}
             <button
               onClick={() => setShowUserMenu(true)}
               className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 text-xs font-bold flex-shrink-0 active:bg-gray-300 transition-colors"
@@ -288,8 +284,6 @@ export default function Dashboard() {
               return (
                 <li key={post.id}>
                   <div className="flex items-start gap-3 py-5">
-
-                    {/* Text content — tapping navigates to post view */}
                     <button
                       onClick={() => router.push(`/posts/${post.id}`)}
                       className="flex-1 min-w-0 text-left"
@@ -297,13 +291,9 @@ export default function Dashboard() {
                       <p className="text-base font-semibold text-gray-900 line-clamp-2 leading-snug">
                         {title}
                       </p>
-
-                      {/* Excerpt — only when no thumbnail */}
                       {excerpt && (
                         <p className="mt-1 text-xs text-gray-400 line-clamp-1">{excerpt}</p>
                       )}
-
-                      {/* Date + stats + editorial status */}
                       <div className="mt-1.5 flex items-center gap-3 text-xs text-gray-400">
                         <span>{formatDate(post.modified)}</span>
                         <span className="flex items-center gap-1">
@@ -311,8 +301,6 @@ export default function Dashboard() {
                           {post.total_comments} {post.total_comments === 1 ? "comment" : "comments"}
                         </span>
                       </div>
-
-                      {/* Content category badges */}
                       {contentCategories.length > 0 && (
                         <div className="mt-1.5 flex items-center gap-1">
                           {contentCategories.slice(0, 2).map((cat) => (
@@ -329,7 +317,6 @@ export default function Dashboard() {
                       )}
                     </button>
 
-                    {/* Thumbnail + action menu grouped tightly */}
                     <div className="flex items-start gap-1 flex-shrink-0">
                       {thumbnail && (
                         <button onClick={() => router.push(`/posts/${post.id}`)}>
@@ -338,14 +325,13 @@ export default function Dashboard() {
                       )}
                       {isPostEditable(post) && (
                         <button
-                          onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
+                          onClick={() => setActiveMenu(post)}
                           className="w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -mr-2 mt-0.5"
                         >
                           <MoreVertical size={17} />
                         </button>
                       )}
                     </div>
-
                   </div>
                 </li>
               );
@@ -353,63 +339,9 @@ export default function Dashboard() {
           </ul>
         )}
 
-        {/* ── Comments tab ─────────────────────────────────────────── */}
+        {/* Comments tab */}
         {filter === "comments" && (
-          <>
-            {commentsLoading && allComments.length === 0 && (
-              <div className="space-y-1 animate-pulse">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="py-4 space-y-2">
-                    <div className="h-4 bg-gray-100 rounded w-full" />
-                    <div className="h-3 bg-gray-100 rounded w-2/3" />
-                    <div className="h-3 bg-gray-100 rounded w-1/3" />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {!commentsLoading && allComments.length === 0 && (
-              <div className="text-center py-20">
-                <p className="text-gray-400 text-sm">No comments yet.</p>
-              </div>
-            )}
-
-            {allComments.length > 0 && (
-              <ul className="divide-y divide-gray-100">
-                {allComments.map((comment) => {
-                  const postTitle = comment._embedded?.up?.[0]?.title?.rendered
-                    ? stripHtml(comment._embedded.up[0].title.rendered)
-                    : null;
-                  const commentText = stripHtml(comment.content.rendered);
-                  return (
-                    <li key={comment.id}>
-                      <button
-                        onClick={() => router.push(`/posts/${comment.post}`)}
-                        className="w-full text-left py-4"
-                      >
-                        <p className="text-sm text-gray-800 line-clamp-2 leading-relaxed">
-                          {commentText}
-                        </p>
-                        {postTitle && (
-                          <p className="mt-1.5 text-xs text-blue-500 truncate">
-                            {postTitle}
-                          </p>
-                        )}
-                        <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-400">
-                          <span>{formatDate(comment.date)}</span>
-                          {comment.status === "hold" && (
-                            <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600">
-                              Pending
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </>
+          <CommentsTab data={commentsData} isLoading={commentsLoading} />
         )}
 
         {/* Sentinel — triggers next page */}
@@ -424,124 +356,78 @@ export default function Dashboard() {
         {filter !== "comments" && !hasNextPage && allPosts.length > 0 && !isInitialLoad && (
           <p className="text-center text-xs text-gray-200 py-6">All articles loaded</p>
         )}
-        {filter === "comments" && !hasNextCommentsPage && allComments.length > 0 && !commentsLoading && (
+        {filter === "comments" && !hasNextCommentsPage && commentTotal > 0 && !commentsLoading && (
           <p className="text-center text-xs text-gray-200 py-6">All comments loaded</p>
         )}
       </main>
 
       {/* ── Post action bottom sheet ──────────────────────────────── */}
       {activeMenu && (
-        <div className="fixed inset-0 z-50 flex items-end" onClick={closeMenu}>
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/30" />
-
-          {/* Sheet */}
-          <div
-            className="relative w-full bg-white rounded-t-2xl shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-            style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-9 h-1 bg-gray-200 rounded-full" />
-            </div>
-
-            {/* Post title */}
-            <p className="px-5 pb-1 text-sm font-semibold text-gray-900 line-clamp-1">
-              {stripHtml(activeMenu.title.rendered) || "Untitled"}
-            </p>
-
-            <div className="px-3 pt-1 pb-2">
-              {deleteConfirm ? (
-                /* ── Confirm delete ──────────────────────────── */
-                <>
-                  <p className="px-3 py-3 text-sm text-gray-500">
-                    This will permanently delete the article. This cannot be undone.
-                  </p>
-                  <button
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm font-medium text-red-600 bg-red-50 active:bg-red-100 disabled:opacity-60"
-                  >
-                    {isDeleting
-                      ? <Loader2 size={18} className="animate-spin" />
-                      : <Trash2 size={18} />}
-                    {isDeleting ? "Deleting…" : "Yes, permanently delete"}
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(false)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-500 active:bg-gray-50 mt-0.5"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                /* ── Actions ─────────────────────────────────── */
-                <>
-                  <button
-                    onClick={() => { router.push(`/write?id=${activeMenu.id}`); closeMenu(); }}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
-                  >
-                    <PenLine size={18} className="text-gray-500" />
-                    Edit article
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(true)}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
-                  >
-                    <Trash2 size={18} />
-                    Delete article
-                  </button>
-                </>
-              )}
-            </div>
+        <BottomSheet onClose={() => setActiveMenu(null)}>
+          <p className="px-5 pb-1 text-sm font-semibold text-gray-900 line-clamp-1">
+            {stripHtml(activeMenu.title.rendered) || "Untitled"}
+          </p>
+          <div className="px-3 pt-1 pb-2">
+            <button
+              onClick={() => { router.push(`/write?id=${activeMenu.id}`); setActiveMenu(null); }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+            >
+              <PenLine size={18} className="text-gray-500" />
+              Edit article
+            </button>
+            <button
+              onClick={() => { setActiveMenu(null); setDeleteDialogOpen(true); }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
+            >
+              <Trash2 size={18} />
+              Delete article
+            </button>
           </div>
-        </div>
+        </BottomSheet>
       )}
+
+      {/* ── Delete confirmation dialog ────────────────────────────── */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        title="Delete article?"
+        message="This will permanently delete the article. This cannot be undone."
+        confirmLabel="Delete"
+        loadingLabel="Deleting…"
+        loading={isDeleting}
+        destructive
+        onConfirm={handleDelete}
+        onCancel={() => { setDeleteDialogOpen(false); setActiveMenu(null); }}
+      />
 
       {/* ── User account bottom sheet ─────────────────────────────── */}
       {showUserMenu && (
-        <div className="fixed inset-0 z-50 flex items-end" onClick={() => setShowUserMenu(false)}>
-          <div className="absolute inset-0 bg-black/30" />
-          <div
-            className="relative w-full bg-white rounded-t-2xl shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-            style={{ paddingBottom: "env(safe-area-inset-bottom, 12px)" }}
-          >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-3 pb-2">
-              <div className="w-9 h-1 bg-gray-200 rounded-full" />
+        <BottomSheet onClose={() => setShowUserMenu(false)}>
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100">
+            <div className="w-11 h-11 rounded-full bg-gray-900 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+              {monogram}
             </div>
-
-            {/* User identity */}
-            <div className="flex items-center gap-3 px-5 py-3 border-b border-gray-100">
-              <div className="w-11 h-11 rounded-full bg-gray-900 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                {monogram}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">{user.name || user.username}</p>
-                <p className="text-xs text-gray-400 truncate">{user.username}</p>
-              </div>
-            </div>
-
-            <div className="px-3 pt-1 pb-2">
-              <button
-                onClick={() => { router.push("/profile"); setShowUserMenu(false); }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
-              >
-                <User size={18} className="text-gray-500" />
-                Edit profile
-              </button>
-              <button
-                onClick={() => { logout(); setShowUserMenu(false); }}
-                className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
-              >
-                <LogOut size={18} />
-                Sign out
-              </button>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">{user.name || user.username}</p>
+              <p className="text-xs text-gray-400 truncate">{user.username}</p>
             </div>
           </div>
-        </div>
+          <div className="px-3 pt-1 pb-2">
+            <button
+              onClick={() => { router.push("/profile"); setShowUserMenu(false); }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+            >
+              <User size={18} className="text-gray-500" />
+              Edit profile
+            </button>
+            <button
+              onClick={() => { logout(); setShowUserMenu(false); }}
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
+            >
+              <LogOut size={18} />
+              Sign out
+            </button>
+          </div>
+        </BottomSheet>
       )}
     </div>
   );

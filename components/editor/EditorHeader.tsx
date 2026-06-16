@@ -2,6 +2,7 @@
 
 import { RefObject, useCallback, useState } from "react";
 import { Eye, Upload, Check, Loader2, ArrowLeft, X } from "lucide-react";
+import { IconButton } from "@/components/ui/IconButton";
 import type { TipTapEditorHandle } from "./TipTapEditor";
 
 export type PublishStatus = "idle" | "publishing" | "success" | "error";
@@ -68,12 +69,9 @@ function PreviewModal({
       {/* Header — mirrors reading page */}
       <div className="safe-top sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
-          <button
-            onClick={onClose}
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
-          >
+          <IconButton onClick={onClose}>
             <X size={15} />
-          </button>
+          </IconButton>
           <span className="text-xs font-medium text-gray-400 tracking-widest uppercase">Preview</span>
           <div className="w-9" />
         </div>
@@ -173,13 +171,9 @@ export default function EditorHeader({
         <div className="flex items-center justify-between h-14 px-5">
         {/* ── Left: back + brand + title ─────────────────────── */}
         <div className="flex items-center gap-2.5 min-w-0">
-          <button
-            onClick={onBack}
-            title="Back to dashboard"
-            className="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors flex-shrink-0"
-          >
+          <IconButton onClick={onBack} title="Back to dashboard">
             <ArrowLeft size={15} />
-          </button>
+          </IconButton>
           {title && (
             <span className="text-sm text-gray-400 truncate max-w-[220px] hidden sm:block">
               {title}

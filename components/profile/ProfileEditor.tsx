@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { IconButton } from "@/components/ui/IconButton";
 import { useAuth } from "@/hooks/useAuth";
 import { useWpConfig } from "@/hooks/useWpConfig";
 import LoginScreen from "@/components/auth/LoginScreen";
@@ -64,12 +65,9 @@ export default function ProfileEditor() {
       <header className="safe-top sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100">
         <div className="flex items-center justify-between h-14 px-5">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.back()}
-              className="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:bg-gray-100 active:text-gray-700 transition-colors"
-            >
+            <IconButton onClick={() => router.back()}>
               <ArrowLeft size={15} />
-            </button>
+            </IconButton>
             <span className="text-sm font-semibold text-gray-900">Edit Profile</span>
           </div>
 
