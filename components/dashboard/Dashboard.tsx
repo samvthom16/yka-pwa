@@ -42,7 +42,7 @@ export default function Dashboard() {
   })();
 
   /* ── Resolve WP author ID ────────────────────────────────────── */
-  const { data: me } = useQuery({
+  const { data: me, isError: meError, refetch: refetchMe } = useQuery({
     queryKey: ["me", user?.username],
     queryFn: () => getMe(cfg!),
     enabled: !!cfg,
@@ -233,6 +233,19 @@ export default function Dashboard() {
             );
           })}
         </div>
+
+        {/* Profile load error — shown when the WP user ID could not be resolved */}
+        {!authLoading && cfg && authorId === undefined && meError && (
+          <div className="text-center py-20">
+            <p className="text-sm text-red-500 mb-4">Failed to load your profile. Check your connection and try again.</p>
+            <button
+              onClick={() => refetchMe()}
+              className="text-sm font-medium text-gray-900 underline underline-offset-4 hover:text-gray-600 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* Loading skeleton */}
         {isInitialLoad && (

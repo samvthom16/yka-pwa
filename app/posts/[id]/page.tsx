@@ -241,13 +241,17 @@ export default function PostPage() {
             <ul className="space-y-6">
               {comments.map((c) => (
                 <li key={c.id} className={`flex gap-3 ${c.parent !== 0 ? "ml-6 sm:ml-10" : ""}`}>
-                  <Image
-                    src={c.author_avatar_urls["48"] ?? c.author_avatar_urls["96"]}
-                    alt={c.author_name}
-                    width={40}
-                    height={40}
-                    className="rounded-full flex-shrink-0 bg-gray-100"
-                  />
+                  {(c.author_avatar_urls["48"] ?? c.author_avatar_urls["96"]) ? (
+                    <Image
+                      src={(c.author_avatar_urls["48"] ?? c.author_avatar_urls["96"])!}
+                      alt={c.author_name}
+                      width={40}
+                      height={40}
+                      className="rounded-full flex-shrink-0 bg-gray-100"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full flex-shrink-0 bg-gray-100" />
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <div>
