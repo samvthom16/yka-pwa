@@ -336,22 +336,22 @@ export default function Dashboard() {
                       )}
                     </button>
 
-                    {/* Thumbnail — tapping navigates to post view */}
-                    {thumbnail && (
-                      <button onClick={() => router.push(`/posts/${post.id}`)} className="flex-shrink-0">
-                        <WpImage src={thumbnail} className="w-24 h-16 rounded-xl object-cover" />
-                      </button>
-                    )}
-
-                    {/* 3-dot action menu — only for editable posts */}
-                    {isPostEditable(post) && (
-                      <button
-                        onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
-                        className="flex-shrink-0 w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -ml-2 -mr-2 mt-0.5"
-                      >
-                        <MoreVertical size={17} />
-                      </button>
-                    )}
+                    {/* Thumbnail + action menu grouped tightly */}
+                    <div className="flex items-start gap-1 flex-shrink-0">
+                      {thumbnail && (
+                        <button onClick={() => router.push(`/posts/${post.id}`)}>
+                          <WpImage src={thumbnail} className="w-24 h-16 rounded-xl object-cover" />
+                        </button>
+                      )}
+                      {isPostEditable(post) && (
+                        <button
+                          onClick={() => { setActiveMenu(post); setDeleteConfirm(false); }}
+                          className="w-9 h-9 flex items-center justify-center text-gray-300 active:text-gray-600 -mr-2 mt-0.5"
+                        >
+                          <MoreVertical size={17} />
+                        </button>
+                      )}
+                    </div>
 
                   </div>
                 </li>
