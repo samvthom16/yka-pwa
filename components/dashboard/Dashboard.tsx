@@ -280,7 +280,7 @@ export default function Dashboard() {
               const thumbnail = post.featured_image || null;
               const allTerms = post._embedded?.["wp:term"]
                 ?.find((group) => group[0]?.taxonomy === "category") ?? [];
-              const EDITORIAL = new Set(["Unlisted", "Unreviewed", "Staff Picks"]);
+              const EDITORIAL = new Set(["Unlisted", "Unreviewed"]);
               const editorialTags = allTerms.filter((t) => EDITORIAL.has(t.name));
               const contentCategories = allTerms.filter(
                 (t) => !EDITORIAL.has(t.name) && t.name !== "Uncategorized"
