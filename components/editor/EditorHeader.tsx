@@ -180,9 +180,6 @@ export default function EditorHeader({
           >
             <ArrowLeft size={15} />
           </button>
-          <div className="flex-shrink-0 w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center">
-            <span className="text-white text-sm font-black tracking-tighter">Y</span>
-          </div>
           {title && (
             <span className="text-sm text-gray-400 truncate max-w-[220px] hidden sm:block">
               {title}
