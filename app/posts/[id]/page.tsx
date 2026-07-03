@@ -34,6 +34,7 @@ export default function PostPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState("");
   const [canShare, setCanShare] = useState(false);
   const [activeCommentMenu, setActiveCommentMenu] = useState<number | null>(null);
   const myWpId = user?.id ?? null;
@@ -74,17 +75,19 @@ export default function PostPage() {
     const plain = new DOMParser().parseFromString(c.content.rendered, "text/html").body.textContent ?? "";
     setEditingId(c.id);
     setEditText(plain.trim());
+    setSaveError("");
   }
 
   async function handleSaveEdit(commentId: number) {
     if (!cfg || !editText.trim()) return;
     setSavingId(commentId);
+    setSaveError("");
     try {
       const updated = await updateComment(cfg, commentId, editText.trim());
       setComments((prev) => prev.map((c) => (c.id === commentId ? updated : c)));
       setEditingId(null);
-    } catch {
-      /* silent */
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save. Please try again.");
     } finally {
       setSavingId(null);
     }
@@ -241,9 +244,9 @@ export default function PostPage() {
             <ul className="space-y-6">
               {comments.map((c) => (
                 <li key={c.id} className={`flex gap-3 ${c.parent !== 0 ? "ml-6 sm:ml-10" : ""}`}>
-                  {(c.author_avatar_urls["48"] ?? c.author_avatar_urls["96"]) ? (
+                  {(c.author_avatar_urls["48"] || c.author_avatar_urls["96"]) ? (
                     <Image
-                      src={(c.author_avatar_urls["48"] ?? c.author_avatar_urls["96"])!}
+                      src={(c.author_avatar_urls["48"] || c.author_avatar_urls["96"])!}
                       alt={c.author_name}
                       width={40}
                       height={40}
@@ -281,6 +284,9 @@ export default function PostPage() {
                           rows={3}
                           className="w-full text-sm text-gray-800 border border-gray-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                         />
+                        {saveError && (
+                          <p className="mt-1.5 text-xs text-red-500">{saveError}</p>
+                        )}
                         <div className="flex items-center gap-2 mt-1.5">
                           <button
                             onClick={() => handleSaveEdit(c.id)}
@@ -290,7 +296,7 @@ export default function PostPage() {
                             {savingId === c.id ? "Saving…" : "Save"}
                           </button>
                           <button
-                            onClick={() => setEditingId(null)}
+                            onClick={() => { setEditingId(null); setSaveError(""); }}
                             className="text-xs text-gray-400 hover:text-gray-700 active:text-gray-700 transition-colors py-2 px-2"
                           >
                             Cancel
