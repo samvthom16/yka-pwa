@@ -42,10 +42,10 @@ export default function Dashboard() {
   })();
 
   /* ── Resolve WP author ID ────────────────────────────────────── */
-  const { data: me, isError: meError, refetch: refetchMe } = useQuery({
+  const { data: me, isLoading: meLoading, isError: meError, refetch: refetchMe } = useQuery({
     queryKey: ["me", user?.username],
     queryFn: () => getMe(cfg!),
-    enabled: !!cfg,
+    enabled: !!cfg && !user?.id,
     staleTime: Infinity,
   });
 
@@ -129,7 +129,7 @@ export default function Dashboard() {
 
   const commentTotal = commentsData?.pages[0]?.total ?? 0;
 
-  const isInitialLoad = postsLoading && allPosts.length === 0;
+  const isInitialLoad = (postsLoading && allPosts.length === 0) || (meLoading && authorId === undefined);
   const isBackgroundRefetch = postsRefetching && allPosts.length > 0;
 
   function isPostEditable(post: WPPostListItem) {
@@ -235,7 +235,7 @@ export default function Dashboard() {
         </div>
 
         {/* Profile load error — shown when the WP user ID could not be resolved */}
-        {!authLoading && cfg && authorId === undefined && meError && (
+        {cfg && authorId === undefined && meError && (
           <div className="text-center py-20">
             <p className="text-sm text-red-500 mb-4">Failed to load your profile. Check your connection and try again.</p>
             <button
