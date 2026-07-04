@@ -2,9 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
-import dynamic from "next/dynamic";
-
-const OfflineBanner = dynamic(() => import("@/components/ui/OfflineBanner"), { ssr: false });
+import OfflineBanner from "@/components/ui/OfflineBanner";
 
 const geist = Geist({
   variable: "--font-geist-sans",
