@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import DOMPurify from "dompurify";
 import Image from "next/image";
@@ -10,7 +11,7 @@ import LoadingScreen from "@/components/ui/LoadingScreen";
 import BottomSheet from "@/components/ui/BottomSheet";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { IconButton, IconButtonLink } from "@/components/ui/IconButton";
-import { getPost, getComments, createComment, updateComment, deleteComment } from "@/lib/api/wordpress";
+import { getPost, getComments, createComment, updateComment, deleteComment, getMe } from "@/lib/api/wordpress";
 import type { WPPostListItem, WPComment } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import { ArrowLeft, ExternalLink, Eye, MessageSquare, ThumbsUp, Share2, MoreVertical } from "lucide-react";
@@ -37,7 +38,13 @@ export default function PostPage() {
   const [saveError, setSaveError] = useState("");
   const [canShare, setCanShare] = useState(false);
   const [activeCommentMenu, setActiveCommentMenu] = useState<number | null>(null);
-  const myWpId = user?.id ?? null;
+  const { data: wpMe } = useQuery({
+    queryKey: ["me", user?.username],
+    queryFn: () => getMe(cfg!),
+    enabled: !!cfg && user?.id == null,
+    staleTime: Infinity,
+  });
+  const myWpId = user?.id ?? wpMe?.id ?? null;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -323,11 +330,13 @@ export default function PostPage() {
               <div className="px-3 pb-2">
                 <button
                   onClick={() => {
+                    if (savingId !== null) return;
                     const c = comments.find((x) => x.id === activeCommentMenu);
                     if (c) startEditing(c);
                     setActiveCommentMenu(null);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+                  disabled={savingId !== null}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50 disabled:opacity-40"
                 >
                   Edit comment
                 </button>

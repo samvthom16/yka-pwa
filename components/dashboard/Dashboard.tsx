@@ -156,16 +156,17 @@ export default function Dashboard() {
   }
 
   function handleRefresh() {
+    if (authorId === undefined) refetchMe();
     refetchPosts();
     refetchCounts();
   }
 
   function handleLogout() {
+    logout();
     queryClient.removeQueries({ queryKey: ["me"] });
     queryClient.removeQueries({ queryKey: ["posts"] });
     queryClient.removeQueries({ queryKey: ["post-counts"] });
     queryClient.removeQueries({ queryKey: ["my-comments"] });
-    logout();
     setShowUserMenu(false);
   }
 
@@ -363,7 +364,7 @@ export default function Dashboard() {
         )}
 
         {/* Comments tab */}
-        {filter === "comments" && (
+        {filter === "comments" && !meError && (
           <CommentsTab data={commentsData} isLoading={authorId === undefined || commentsPending} />
         )}
 
