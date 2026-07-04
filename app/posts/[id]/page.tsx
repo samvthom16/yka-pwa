@@ -72,6 +72,7 @@ export default function PostPage() {
   }
 
   function startEditing(c: WPComment) {
+    if (savingId !== null) return;
     const plain = new DOMParser().parseFromString(c.content.rendered, "text/html").body.textContent ?? "";
     setEditingId(c.id);
     setEditText(plain.trim());
@@ -297,7 +298,8 @@ export default function PostPage() {
                           </button>
                           <button
                             onClick={() => { setEditingId(null); setSaveError(""); }}
-                            className="text-xs text-gray-400 hover:text-gray-700 active:text-gray-700 transition-colors py-2 px-2"
+                            disabled={savingId === c.id}
+                            className="text-xs text-gray-400 hover:text-gray-700 active:text-gray-700 disabled:opacity-40 transition-colors py-2 px-2"
                           >
                             Cancel
                           </button>

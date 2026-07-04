@@ -45,7 +45,7 @@ export default function Dashboard() {
   const { data: me, isLoading: meLoading, isError: meError, refetch: refetchMe } = useQuery({
     queryKey: ["me", user?.username],
     queryFn: () => getMe(cfg!),
-    enabled: !!cfg && user?.id === undefined,
+    enabled: !!cfg && user?.id == null,
     staleTime: Infinity,
   });
 
@@ -158,6 +158,15 @@ export default function Dashboard() {
   function handleRefresh() {
     refetchPosts();
     refetchCounts();
+  }
+
+  function handleLogout() {
+    queryClient.removeQueries({ queryKey: ["me"] });
+    queryClient.removeQueries({ queryKey: ["posts"] });
+    queryClient.removeQueries({ queryKey: ["post-counts"] });
+    queryClient.removeQueries({ queryKey: ["my-comments"] });
+    logout();
+    setShowUserMenu(false);
   }
 
   return (
@@ -355,7 +364,7 @@ export default function Dashboard() {
 
         {/* Comments tab */}
         {filter === "comments" && (
-          <CommentsTab data={commentsData} isLoading={authorId !== undefined && commentsPending} />
+          <CommentsTab data={commentsData} isLoading={authorId === undefined || commentsPending} />
         )}
 
         {/* Sentinel — triggers next page */}
@@ -434,7 +443,7 @@ export default function Dashboard() {
               Edit profile
             </button>
             <button
-              onClick={() => { queryClient.removeQueries({ queryKey: ["me"] }); logout(); setShowUserMenu(false); }}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
             >
               <LogOut size={18} />
