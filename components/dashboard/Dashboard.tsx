@@ -42,10 +42,10 @@ export default function Dashboard() {
   })();
 
   /* ── Resolve WP author ID ────────────────────────────────────── */
-  const { data: me } = useQuery({
+  const { data: me, isLoading: meLoading, isError: meError, refetch: refetchMe } = useQuery({
     queryKey: ["me", user?.username],
     queryFn: () => getMe(cfg!),
-    enabled: !!cfg,
+    enabled: !!cfg && user?.id == null,
     staleTime: Infinity,
   });
 
@@ -129,7 +129,7 @@ export default function Dashboard() {
 
   const commentTotal = commentsData?.pages[0]?.total ?? 0;
 
-  const isInitialLoad = postsLoading && allPosts.length === 0;
+  const isInitialLoad = postsLoading || meLoading;
   const isBackgroundRefetch = postsRefetching && allPosts.length > 0;
 
   function isPostEditable(post: WPPostListItem) {
@@ -156,8 +156,18 @@ export default function Dashboard() {
   }
 
   function handleRefresh() {
+    if (authorId === undefined) refetchMe();
     refetchPosts();
     refetchCounts();
+  }
+
+  function handleLogout() {
+    logout();
+    queryClient.removeQueries({ queryKey: ["me"] });
+    queryClient.removeQueries({ queryKey: ["posts"] });
+    queryClient.removeQueries({ queryKey: ["post-counts"] });
+    queryClient.removeQueries({ queryKey: ["my-comments"] });
+    setShowUserMenu(false);
   }
 
   return (
@@ -234,6 +244,19 @@ export default function Dashboard() {
           })}
         </div>
 
+        {/* Profile load error — shown when the WP user ID could not be resolved */}
+        {cfg && authorId === undefined && meError && (
+          <div className="text-center py-20">
+            <p className="text-sm text-red-500 mb-4">Failed to load your profile. Check your connection and try again.</p>
+            <button
+              onClick={() => refetchMe()}
+              className="text-sm font-medium text-gray-900 underline underline-offset-4 hover:text-gray-600 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Loading skeleton */}
         {isInitialLoad && (
           <div className="space-y-1">
@@ -251,7 +274,7 @@ export default function Dashboard() {
         )}
 
         {/* Empty state — posts */}
-        {filter !== "comments" && !isInitialLoad && filtered.length === 0 && (
+        {filter !== "comments" && !isInitialLoad && !meError && filtered.length === 0 && (
           <div className="text-center py-20">
             <p className="text-gray-400 text-sm mb-4">
               {allPosts.length === 0
@@ -341,8 +364,8 @@ export default function Dashboard() {
         )}
 
         {/* Comments tab */}
-        {filter === "comments" && (
-          <CommentsTab data={commentsData} isLoading={commentsPending} />
+        {filter === "comments" && !meError && (
+          <CommentsTab data={commentsData} isLoading={authorId === undefined || commentsPending} />
         )}
 
         {/* Sentinel — triggers next page */}
@@ -421,7 +444,7 @@ export default function Dashboard() {
               Edit profile
             </button>
             <button
-              onClick={() => { logout(); setShowUserMenu(false); }}
+              onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-red-500 active:bg-red-50"
             >
               <LogOut size={18} />

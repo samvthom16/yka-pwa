@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import DOMPurify from "dompurify";
 import Image from "next/image";
@@ -10,7 +11,7 @@ import LoadingScreen from "@/components/ui/LoadingScreen";
 import BottomSheet from "@/components/ui/BottomSheet";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { IconButton, IconButtonLink } from "@/components/ui/IconButton";
-import { getPost, getComments, createComment, updateComment, deleteComment } from "@/lib/api/wordpress";
+import { getPost, getComments, createComment, updateComment, deleteComment, getMe } from "@/lib/api/wordpress";
 import type { WPPostListItem, WPComment } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import { ArrowLeft, ExternalLink, Eye, MessageSquare, ThumbsUp, Share2, MoreVertical } from "lucide-react";
@@ -34,9 +35,16 @@ export default function PostPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [saveError, setSaveError] = useState("");
   const [canShare, setCanShare] = useState(false);
   const [activeCommentMenu, setActiveCommentMenu] = useState<number | null>(null);
-  const myWpId = user?.id ?? null;
+  const { data: wpMe } = useQuery({
+    queryKey: ["me", user?.username],
+    queryFn: () => getMe(cfg!),
+    enabled: !!cfg && user?.id == null,
+    staleTime: Infinity,
+  });
+  const myWpId = user?.id ?? wpMe?.id ?? null;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -71,20 +79,23 @@ export default function PostPage() {
   }
 
   function startEditing(c: WPComment) {
+    if (savingId !== null) return;
     const plain = new DOMParser().parseFromString(c.content.rendered, "text/html").body.textContent ?? "";
     setEditingId(c.id);
     setEditText(plain.trim());
+    setSaveError("");
   }
 
   async function handleSaveEdit(commentId: number) {
     if (!cfg || !editText.trim()) return;
     setSavingId(commentId);
+    setSaveError("");
     try {
       const updated = await updateComment(cfg, commentId, editText.trim());
       setComments((prev) => prev.map((c) => (c.id === commentId ? updated : c)));
       setEditingId(null);
-    } catch {
-      /* silent */
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save. Please try again.");
     } finally {
       setSavingId(null);
     }
@@ -241,13 +252,17 @@ export default function PostPage() {
             <ul className="space-y-6">
               {comments.map((c) => (
                 <li key={c.id} className={`flex gap-3 ${c.parent !== 0 ? "ml-6 sm:ml-10" : ""}`}>
-                  <Image
-                    src={c.author_avatar_urls["48"] ?? c.author_avatar_urls["96"]}
-                    alt={c.author_name}
-                    width={40}
-                    height={40}
-                    className="rounded-full flex-shrink-0 bg-gray-100"
-                  />
+                  {(c.author_avatar_urls["48"] || c.author_avatar_urls["96"]) ? (
+                    <Image
+                      src={(c.author_avatar_urls["48"] || c.author_avatar_urls["96"])!}
+                      alt={c.author_name}
+                      width={40}
+                      height={40}
+                      className="rounded-full flex-shrink-0 bg-gray-100"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full flex-shrink-0 bg-gray-100" />
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <div>
@@ -277,6 +292,9 @@ export default function PostPage() {
                           rows={3}
                           className="w-full text-sm text-gray-800 border border-gray-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:border-gray-400 transition-colors"
                         />
+                        {saveError && (
+                          <p className="mt-1.5 text-xs text-red-500">{saveError}</p>
+                        )}
                         <div className="flex items-center gap-2 mt-1.5">
                           <button
                             onClick={() => handleSaveEdit(c.id)}
@@ -286,8 +304,9 @@ export default function PostPage() {
                             {savingId === c.id ? "Saving…" : "Save"}
                           </button>
                           <button
-                            onClick={() => setEditingId(null)}
-                            className="text-xs text-gray-400 hover:text-gray-700 active:text-gray-700 transition-colors py-2 px-2"
+                            onClick={() => { setEditingId(null); setSaveError(""); }}
+                            disabled={savingId === c.id}
+                            className="text-xs text-gray-400 hover:text-gray-700 active:text-gray-700 disabled:opacity-40 transition-colors py-2 px-2"
                           >
                             Cancel
                           </button>
@@ -311,11 +330,13 @@ export default function PostPage() {
               <div className="px-3 pb-2">
                 <button
                   onClick={() => {
+                    if (savingId !== null) return;
                     const c = comments.find((x) => x.id === activeCommentMenu);
                     if (c) startEditing(c);
                     setActiveCommentMenu(null);
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50"
+                  disabled={savingId !== null}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left text-sm text-gray-800 active:bg-gray-50 disabled:opacity-40"
                 >
                   Edit comment
                 </button>
