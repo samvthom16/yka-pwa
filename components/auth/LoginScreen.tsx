@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { sendOtp, verifyOtp } from "@/lib/api/auth";
 import type { WPUser } from "@/lib/api/auth";
 import { getMe } from "@/lib/api/wordpress";
@@ -61,7 +62,14 @@ export default function LoginScreen({ onLogin }: Props) {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="mb-10 text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">YKA Editor</h1>
+          <Image
+            src="/logo.png"
+            alt="Youth Ki Awaaz"
+            width={500}
+            height={281}
+            priority
+            className="h-16 w-auto mx-auto"
+          />
           <p className="mt-2 text-sm text-gray-400">Sign in to start writing</p>
         </div>
 

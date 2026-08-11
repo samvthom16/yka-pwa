@@ -14,6 +14,7 @@ import { getPosts, getPostCounts, getMe, deletePost, getMyComments } from "@/lib
 import type { WPPostListItem } from "@/lib/api/wordpress";
 import { formatDate, stripHtml } from "@/lib/utils";
 import WpImage from "@/components/ui/WpImage";
+import Image from "next/image";
 import { Loader2, PenLine, RefreshCw, LogOut, MessageSquare, MoreVertical, Trash2, User } from "lucide-react";
 
 const PER_PAGE = 20;
@@ -177,9 +178,13 @@ export default function Dashboard() {
         <div className="flex items-center justify-between h-14 px-5">
           {/* Brand */}
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 bg-gray-900 rounded-md flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm font-black tracking-tighter">Y</span>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Youth Ki Awaaz"
+              width={500}
+              height={281}
+              className="h-8 w-auto flex-shrink-0"
+            />
             {isBackgroundRefetch && (
               <div className="w-1.5 h-1.5 rounded-full bg-gray-300 animate-pulse flex-shrink-0" />
             )}
