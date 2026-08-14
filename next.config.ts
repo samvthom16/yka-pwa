@@ -15,7 +15,7 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "ykasandbox.com" },
+      { protocol: "https", hostname: "youthkiawaaz.com" },
       { protocol: "https", hostname: "**.gravatar.com" },
     ],
   },
