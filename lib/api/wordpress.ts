@@ -53,6 +53,14 @@ function apiUrl(cfg: WPConfig, path: string): string {
   return `${cfg.siteUrl.replace(/\/$/, "")}/wp-json/wp/v2${path}`;
 }
 
+// The core /wp/v2/posts endpoint is locked down for Authors/Contributors on this
+// site. Creating and updating posts goes through this custom front-end-post (fep)
+// endpoint instead, which accepts the same fields (title, content, status,
+// featured_media, comment_status) and returns the same post shape.
+function apiUrlYka(cfg: WPConfig, path: string): string {
+  return `${cfg.siteUrl.replace(/\/$/, "")}/wp-json/yka/v2${path}`;
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
@@ -281,7 +289,7 @@ export async function createPost(
   cfg: WPConfig,
   post: WPPostInput
 ): Promise<WPPostResponse> {
-  const res = await fetch(apiUrl(cfg, "/posts"), {
+  const res = await fetch(apiUrlYka(cfg, "/fep"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -297,7 +305,7 @@ export async function updatePost(
   postId: number,
   patch: Partial<WPPostInput>
 ): Promise<WPPostResponse> {
-  const res = await fetch(apiUrl(cfg, `/posts/${postId}`), {
+  const res = await fetch(apiUrlYka(cfg, `/fep/${postId}`), {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
