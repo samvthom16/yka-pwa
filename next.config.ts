@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "youthkiawaaz.com" },
+      { protocol: "https", hostname: "www.youthkiawaaz.com" },
       { protocol: "https", hostname: "s3.youthkiawaaz.com" },
       { protocol: "https", hostname: "**.gravatar.com" },
     ],
