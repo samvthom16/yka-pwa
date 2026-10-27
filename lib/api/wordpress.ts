@@ -9,6 +9,8 @@
  *   const post = await publishPost(config, { title: "Hello", content: "<p>World</p>", status: "draft" })
  */
 
+import { cfBypassHeaders } from "@/lib/wp-config";
+
 export interface WPConfig {
   siteUrl: string;   // e.g. "https://myblog.com"  — no trailing slash
   username: string;
@@ -49,6 +51,10 @@ function authHeader(cfg: WPConfig): string {
   return buildAuthHeader(cfg.username, cfg.appPassword);
 }
 
+function baseHeaders(cfg: WPConfig): Record<string, string> {
+  return { Authorization: authHeader(cfg), ...cfBypassHeaders() };
+}
+
 function apiUrl(cfg: WPConfig, path: string): string {
   return `${cfg.siteUrl.replace(/\/$/, "")}/wp-json/wp/v2${path}`;
 }
@@ -78,7 +84,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 /* ─── Current user ───────────────────────────────────────────── */
 export async function getMe(cfg: WPConfig): Promise<{ id: number; name: string; slug: string }> {
   const res = await fetch(apiUrl(cfg, "/users/me"), {
-    headers: { Authorization: authHeader(cfg) },
+    headers: baseHeaders(cfg),
   });
   return handleResponse(res);
 }
@@ -94,7 +100,7 @@ export interface WPUserProfile {
 
 export async function getMyProfile(cfg: WPConfig): Promise<WPUserProfile> {
   const res = await fetch(apiUrl(cfg, "/users/me?context=edit"), {
-    headers: { Authorization: authHeader(cfg) },
+    headers: baseHeaders(cfg),
   });
   return handleResponse<WPUserProfile>(res);
 }
@@ -105,7 +111,7 @@ export async function updateMyProfile(
 ): Promise<WPUserProfile> {
   const res = await fetch(apiUrl(cfg, "/users/me"), {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: authHeader(cfg) },
+    headers: { "Content-Type": "application/json", ...baseHeaders(cfg) },
     body: JSON.stringify(patch),
   });
   return handleResponse<WPUserProfile>(res);
@@ -153,7 +159,7 @@ export async function getPostCounts(cfg: WPConfig, authorId?: number): Promise<P
     const params = new URLSearchParams({ status, per_page: "1" });
     if (authorId) params.set("author", String(authorId));
     const res = await fetch(apiUrl(cfg, `/posts?${params}`), {
-      headers: { Authorization: authHeader(cfg) },
+      headers: baseHeaders(cfg),
     });
     if (!res.ok) return 0;
     return Number(res.headers.get("X-WP-Total") ?? "0");
@@ -167,7 +173,7 @@ export async function getPostCounts(cfg: WPConfig, authorId?: number): Promise<P
 
 export async function getPost(cfg: WPConfig, id: number): Promise<WPPostListItem> {
   const res = await fetch(apiUrl(cfg, `/posts/${id}?_embed=wp:term`), {
-    headers: { Authorization: authHeader(cfg) },
+    headers: baseHeaders(cfg),
   });
   return handleResponse<WPPostListItem>(res);
 }
@@ -189,7 +195,7 @@ export async function getPosts(
   });
   if (authorId) params.set("author", String(authorId));
   const res = await fetch(apiUrl(cfg, `/posts?${params}`), {
-    headers: { Authorization: authHeader(cfg) },
+    headers: baseHeaders(cfg),
   });
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
@@ -241,7 +247,7 @@ export async function getMyComments(
     _embed: "up",
   });
   const res = await fetch(apiUrl(cfg, `/comments?${params}`), {
-    headers: { Authorization: authHeader(cfg) },
+    headers: baseHeaders(cfg),
   });
   if (!res.ok) return { comments: [], totalPages: 1, total: 0 };
   const totalPages = Number(res.headers.get("X-WP-TotalPages") ?? "1");
@@ -253,7 +259,7 @@ export async function getMyComments(
 export async function getComments(cfg: WPConfig, postId: number): Promise<WPComment[]> {
   const params = new URLSearchParams({ post: String(postId), per_page: "100", status: "any" });
   const res = await fetch(apiUrl(cfg, `/comments?${params}`), {
-    headers: { Authorization: authHeader(cfg) },
+    headers: baseHeaders(cfg),
   });
   if (!res.ok) return [];
   return res.json() as Promise<WPComment[]>;
@@ -262,7 +268,7 @@ export async function getComments(cfg: WPConfig, postId: number): Promise<WPComm
 export async function updateComment(cfg: WPConfig, commentId: number, content: string): Promise<WPComment> {
   const res = await fetch(apiUrl(cfg, `/comments/${commentId}`), {
     method: "PUT",
-    headers: { "Content-Type": "application/json", Authorization: authHeader(cfg) },
+    headers: { "Content-Type": "application/json", ...baseHeaders(cfg) },
     body: JSON.stringify({ content }),
   });
   return handleResponse<WPComment>(res);
@@ -271,7 +277,7 @@ export async function updateComment(cfg: WPConfig, commentId: number, content: s
 export async function deleteComment(cfg: WPConfig, commentId: number): Promise<void> {
   const res = await fetch(apiUrl(cfg, `/comments/${commentId}?force=true`), {
     method: "DELETE",
-    headers: { Authorization: authHeader(cfg) },
+    headers: baseHeaders(cfg),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
@@ -279,7 +285,7 @@ export async function deleteComment(cfg: WPConfig, commentId: number): Promise<v
 export async function createComment(cfg: WPConfig, postId: number, content: string): Promise<WPComment> {
   const res = await fetch(apiUrl(cfg, "/comments"), {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: authHeader(cfg) },
+    headers: { "Content-Type": "application/json", ...baseHeaders(cfg) },
     body: JSON.stringify({ post: postId, content }),
   });
   return handleResponse<WPComment>(res);
@@ -293,7 +299,7 @@ export async function createPost(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: authHeader(cfg),
+      ...baseHeaders(cfg),
     },
     body: JSON.stringify(post),
   });
@@ -309,7 +315,7 @@ export async function updatePost(
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      Authorization: authHeader(cfg),
+      ...baseHeaders(cfg),
     },
     body: JSON.stringify(patch),
   });
@@ -319,7 +325,7 @@ export async function updatePost(
 export async function deletePost(cfg: WPConfig, postId: number): Promise<void> {
   const res = await fetch(apiUrl(cfg, `/posts/${postId}?force=true`), {
     method: "DELETE",
-    headers: { Authorization: authHeader(cfg) },
+    headers: baseHeaders(cfg),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
@@ -337,7 +343,7 @@ export async function uploadMedia(
   const res = await fetch(apiUrl(cfg, "/media"), {
     method: "POST",
     headers: {
-      Authorization: authHeader(cfg),
+      ...baseHeaders(cfg),
       // Content-Disposition tells WP the original filename
       "Content-Disposition": `attachment; filename="${encodeURIComponent(file.name)}"`,
     },
