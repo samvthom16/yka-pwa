@@ -1,6 +1,6 @@
-import { WP_SITE_URL, cfBypassHeaders } from "@/lib/wp-config";
-
-const BASE = `${WP_SITE_URL}/wp-json/yka/v2`;
+// Goes through this app's own /api/wp proxy instead of WordPress directly —
+// same-origin, so no CORS, and the Cloudflare bypass secret stays server-side.
+const BASE = "/api/wp/wp-json/yka/v2";
 
 function b64(value: string): string {
   return btoa(value);
@@ -17,7 +17,7 @@ export async function sendOtp(email: string): Promise<void> {
   const body = new URLSearchParams({ email_address: b64(email) });
   const res = await fetch(`${BASE}/send-otp/`, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", ...cfBypassHeaders() },
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
   });
   if (!res.ok) {
@@ -33,7 +33,7 @@ export async function verifyOtp(email: string, otp: string): Promise<WPUser> {
   });
   const res = await fetch(`${BASE}/verify-otp/`, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded", ...cfBypassHeaders() },
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
   });
   const data = await res.json().catch(() => null);

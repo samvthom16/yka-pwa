@@ -9,8 +9,6 @@
  *   const post = await publishPost(config, { title: "Hello", content: "<p>World</p>", status: "draft" })
  */
 
-import { cfBypassHeaders } from "@/lib/wp-config";
-
 export interface WPConfig {
   siteUrl: string;   // e.g. "https://myblog.com"  — no trailing slash
   username: string;
@@ -52,11 +50,14 @@ function authHeader(cfg: WPConfig): string {
 }
 
 function baseHeaders(cfg: WPConfig): Record<string, string> {
-  return { Authorization: authHeader(cfg), ...cfBypassHeaders() };
+  return { Authorization: authHeader(cfg) };
 }
 
+// Requests go through this app's own /api/wp proxy (app/api/wp/[...path]/route.ts)
+// instead of WordPress directly — same-origin, so no CORS, and the Cloudflare
+// bypass secret stays server-side.
 function apiUrl(cfg: WPConfig, path: string): string {
-  return `${cfg.siteUrl.replace(/\/$/, "")}/wp-json/wp/v2${path}`;
+  return `/api/wp/wp-json/wp/v2${path}`;
 }
 
 // The core /wp/v2/posts endpoint is locked down for Authors/Contributors on this
@@ -64,7 +65,7 @@ function apiUrl(cfg: WPConfig, path: string): string {
 // endpoint instead, which accepts the same fields (title, content, status,
 // featured_media, comment_status) and returns the same post shape.
 function apiUrlYka(cfg: WPConfig, path: string): string {
-  return `${cfg.siteUrl.replace(/\/$/, "")}/wp-json/yka/v2${path}`;
+  return `/api/wp/wp-json/yka/v2${path}`;
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
